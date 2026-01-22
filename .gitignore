@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# PartyKit
+.partykit/
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Source/working files not used in game
+human-materials-ignore/
+
+# Debug/test HTML files (not needed for production)
+hitbox-test.html
+hitbox-penis.html
+hitbox-vagina.html
+ground-test.html
+
+# Empty/unused folders
+untitled folder/
+
+# Symlinks to external projects (not part of this repo)
+agents.md
+GAME_INTEGRATION.md
+games.json
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+build/
+*.log

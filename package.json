@@ -1,0 +1,18 @@
+{
+  "name": "penis-vagina",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "partykit dev",
+    "deploy": "partykit deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Penis vs Vagina - A multiplayer platformer",
+  "dependencies": {
+    "partykit": "^0.0.115",
+    "partysocket": "^1.1.10"
+  }
+}
