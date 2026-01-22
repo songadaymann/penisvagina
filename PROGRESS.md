@@ -3,7 +3,10 @@
 ## Overview
 A charmingly crude, hand-drawn multiplayer platformer built with Phaser 3 and PartyKit. Players control walking penis or vagina characters that shoot projectiles at flying MAGA and ICE hats. Supports both single-player and 2-player online multiplayer with CO-OP and COMPETE modes.
 
-**Live URL:** https://penis-vagina.songadaymann.partykit.dev
+**Live URLs:**
+- PartyKit: https://penis-vagina.songadaymann.partykit.dev
+- Vercel: https://penisvagina.vercel.app
+- GitHub: https://github.com/songadaymann/penisvagina
 
 ## What We've Built
 
@@ -164,7 +167,7 @@ Each character has TWO hitboxes:
 ├── package.json            # NPM config with partykit scripts
 ├── partykit.json           # PartyKit configuration
 ├── js/
-│   └── game.js             # Main game code (7 scenes, ~2000 lines)
+│   └── game.js             # Main game code (8 scenes, ~4000 lines)
 ├── party/
 │   └── server.ts           # PartyKit multiplayer server (TypeScript)
 ├── assets/
@@ -290,7 +293,320 @@ The game features exponential difficulty scaling over ~10 minutes, building from
 - **Difficulty indicator** (below time) - text label with color coding:
   - CALM (grey) → RISING (green) → INTENSE (orange) → CHAOS (red) → PANDEMONIUM (bright red)
 
-## Recent Session Changes (Jan 21, 2025 - Session 5)
+## Recent Session Changes (Jan 21, 2025 - Session 8)
+
+### Duck/Crouch Feature (NEW!)
+
+Added ducking mechanic - press DOWN arrow to crouch.
+
+**New Assets:**
+- `assets/penis/penis-duck.png` - Penis crouch sprite
+- `assets/vagina/vagina-duck.png` - Vagina crouch sprite
+
+**Controls:**
+- Keyboard: Down arrow to duck (while on ground)
+- Touch: New DOWN button added between left/right arrows
+- Virtual controller (mann.cool): Down on D-pad
+
+**Animations Added:**
+- `duck_penis` - Single frame duck animation
+- `duck_vagina` - Single frame duck animation
+
+**Hitbox System Overhaul:**
+- Refactored to support different hitboxes for standing vs ducking
+- `this.standingHitbox` - Original standing pose hitboxes
+- `this.duckHitbox` - Smaller/wider hitboxes for duck pose
+- `applyHitbox(config)` - Method to switch between hitbox configs
+- `updateBodyHitboxSize()` - Updates body sensor when switching
+
+**Duck Hitbox Values:**
+| Character | Pose | Sprite Size | Foot Offset Y | Body Size | Body Offset |
+|-----------|------|-------------|---------------|-----------|-------------|
+| Penis | Standing | 1085x1728 | 1106 | 1061x1201 | (0, -347) |
+| Penis | Duck | 1608x1161 | 573 | 1382x617 | (100, -253) |
+| Vagina | Standing | 1085x1728 | 1083 | 517x1012 | (-184, -281) |
+| Vagina | Duck | 1608x1161 | 555 | 983x550 | (172, -278) |
+
+**Foot Offset Y Formula:** `offsetY = spriteHeight - (radius × 2)` to position foot circle at sprite bottom.
+
+**Behavior:**
+- Ducking stops horizontal movement (can't walk while ducked)
+- Duck animation plays (visual only)
+- ~~Hitbox switches to shorter/wider shape when ducking~~ (DISABLED)
+- Multiplayer sync includes `isDucking` state
+- Remote players show duck animation when other player ducks
+
+**Touch Controls (index.html):**
+- Added DOWN button with `data-control="down"`
+- New `.arrow-down::before` CSS for down arrow symbol (▼)
+
+**Debug Tool:**
+- Created `hitbox-duck.html` - Interactive hitbox tuner for duck sprites
+- Switch between penis/vagina with buttons
+- Sliders for foot and body hitbox parameters
+- Uses Phaser's built-in physics debug (matches game visualization)
+- Shows code output to paste into game.js
+
+**Known Issue - HITBOX SWITCHING DISABLED:**
+- **Problem:** Phaser doesn't update `sprite.height` immediately when animation changes
+- When releasing duck, standing hitbox (offsetY: 1106) was applied while sprite was still duck size (1161 tall)
+- This caused foot hitbox to extend 500+ pixels below sprite, making player fall through ground
+- **Attempted fix:** Wait for sprite dimensions to match before applying hitbox
+- **Current state:** Hitbox switching code commented out; duck is visual-only for now
+- **Future fix needed:** Either use animation events to detect frame change, or adjust player Y position when switching hitboxes to compensate
+
+---
+
+## Previous Session Changes (Jan 21, 2025 - Session 7)
+
+### Multiplayer Bug Fixes
+
+**Intro Music Overlap Fix:**
+- Fixed intro music continuing to play over game music in 2-player mode
+- Added `introMusic.stop()` before scene transitions in:
+  - `CreateRoomScene` (host starts game)
+  - `JoinRoomScene` (direct game start)
+  - `WaitingScene` (non-host game start)
+
+**Remote Player Animation Fix:**
+- Fixed remote player not showing walk animation
+- Added initial idle animation when creating remote player: `this.remotePlayer.play('idle_' + this.remotePlayerCharacter)`
+
+**Ground Physics Fix:**
+- Fixed players falling off the world after walking for extended periods
+- Increased ground physics body from 100,000 to 10,000,000 pixels wide
+- At 750 px/sec, would take ~2 hours to reach edge (effectively infinite)
+
+### Multiplayer Power-ups
+
+Added full server-side pizza synchronization for 2-player mode:
+
+**Server Changes (`party/server.ts`):**
+- Added `Pizza` interface with id, type, x, y, baseY, speed, bobOffset
+- Added `pizzas: Pizza[]` to GameState
+- Added `pizzaSpawnInterval` timer (spawns every 15 seconds)
+- New message types: `pizzaCollect`, `pizzaSpawn`, `pizzaCollected`, `playerHealed`, `playerInvincible`
+- `handlePizzaCollect()` - removes pizza, applies effect, broadcasts to all players
+- Health pizza restores 1 shared life (co-op) or individual life (compete)
+- Invincibility pizza grants 10 seconds of invincibility
+
+**Client Changes (`js/game.js`):**
+- `spawnPizzaFromServer()` - creates pizza sprite from server data
+- `startRemoteInvincibility()` - shows rainbow effect on other player
+- `startInvincibility(duration)` - refactored to accept duration parameter
+- Sends `pizzaCollect` message to server when collecting in multiplayer
+- Handles `pizzaSpawn`, `pizzaCollected`, `playerHealed`, `playerInvincible` messages
+
+### Difficulty Progression Changes
+
+**Faster Difficulty Ramp:**
+- Changed `maxTime` from 600 to 300 seconds (5 minutes instead of 10)
+- All difficulty scaling now happens twice as fast:
+  - CALM: 0-1 min
+  - RISING: 1-2 min
+  - INTENSE: 2-3 min
+  - CHAOS: 3-4 min
+  - PANDEMONIUM: 4-5 min
+
+**Removed Time/Difficulty Display:**
+- Removed elapsed time display from top of screen
+- Removed difficulty phase label (CALM/RISING/etc.)
+- Difficulty still ramps in background, just not visible to player
+
+### Boss System (NEW!)
+
+Added three boss encounters at fixed positions in the level:
+
+**Boss Configurations:**
+| Boss | Position | Walk Time | Health | Hat Spawn Rate |
+|------|----------|-----------|--------|----------------|
+| KRISTI | x=45,000 | 1 minute | 20 hits | 800ms |
+| MILLER | x=90,000 | 2 minutes | 30 hits | 600ms |
+| TRUMP | x=135,000 | 3 minutes | 50 hits | 400ms |
+
+**Boss Features:**
+- Large floating heads with open mouths (pixel art assets)
+- Bob gently up and down while active
+- Spawn hats continuously from mouth area (spray pattern)
+- Health bar displayed below boss (red fill, black border)
+- Boss name displayed above health bar
+- Fade in when player approaches (within 1.5 screen widths)
+
+**Boss Combat:**
+- Projectiles damage boss (1 HP per hit)
+- Visual feedback: white flash then red flash on hit
+- Screen shake on hit
+- Health bar shrinks as boss takes damage
+- +1 score per hit, +50 bonus for kill
+
+**Boss Death:**
+- Multiple explosions across boss area
+- Large screen shake
+- "BOSS DEFEATED!" text floats up and fades
+- Boss fades out and grows slightly before destruction
+
+**Debug Features:**
+- `this.showBossHitboxes = true` - shows green debug rectangles for hitboxes
+- URL parameters for testing: `?x=44000&time=60` to skip to boss position
+
+**Skip URLs for Testing:**
+- KRISTI: `?x=44000&time=60`
+- MILLER: `?x=89000&time=120`
+- TRUMP: `?x=134000&time=180`
+
+**Technical Implementation:**
+- `setupBosses()` - creates boss sprites and UI elements
+- `updateBosses()` - handles activation, bobbing, hat spawning, collision detection
+- `activateBoss()` - fades in boss, adds physics body, sets up collision
+- `spawnBossHat()` - creates hat from boss mouth with spray trajectory
+- `hitBoss()` - handles damage, visual feedback, health bar update
+- `killBoss()` - death sequence with explosions and cleanup
+- Manual collision detection in update loop (more reliable than physics overlap)
+- Dynamic physics body (not static) so position updates work correctly
+
+**Boss Assets:**
+- `assets/kristi.png` - Kristi Noem screaming head with cowboy hat
+- `assets/miller.png` - Stephen Miller screaming head
+- `assets/trump.png` - Donald Trump screaming head with cowboy hat
+
+---
+
+## Previous Session Changes (Jan 22, 2025 - Session 6)
+
+### Pizza Power-ups
+Added two new collectible power-ups that spawn every 15 seconds:
+
+**Health Pizza:**
+- Restores 1 life (max 3 lives)
+- 10-frame floating animation from `assets/healthPizza/`
+- Spawns at random Y position in playable area
+
+**Invincibility Pizza:**
+- 10 seconds of invincibility
+- Player flashes rainbow colors (cycles through 7 colors every 50ms)
+- Kills any hat on contact during invincibility
+- 10-frame floating animation from `assets/infiinity-pizza/`
+
+**Pizza System:**
+- `spawnPizza()` - creates random pizza type at random position ahead of camera
+- `createPizzaAnimations()` - sets up floating animations for both types
+- Collision handler distinguishes type via `pizza.pizzaType` property
+- Pizza scale: 1.0x (after multiple size increases)
+
+### Mario-Style Projectile Physics
+Fixed projectiles so player can't "catch up" to them when moving:
+- Projectile now inherits player's X velocity
+- `const horizSpeed = (facingRight ? baseHorizSpeed : -baseHorizSpeed) + playerVelX`
+- Projectiles always move away from player regardless of movement
+
+### GitHub Repository
+- Created repo: https://github.com/songadaymann/penisvagina
+- Pushed all code with proper .gitignore
+
+### mann.cool Leaderboard Integration
+Added `GameOverScene` with full leaderboard support:
+
+**Features:**
+- Displays final score with hand-drawn styling
+- Name input field (keyboard entry)
+- Fetches top 10 scores from `https://mann.cool/api/leaderboard?game=penisvagina`
+- Submits scores as negative values (API sorts ascending, so -1000 ranks higher than -500)
+- Hand-drawn wobbly border aesthetic matching game style
+- "PLAY AGAIN" button to restart
+
+**API Integration:**
+```javascript
+// Fetch leaderboard
+fetch('https://mann.cool/api/leaderboard?game=penisvagina&limit=10')
+
+// Submit score (negated for proper ranking)
+fetch('https://mann.cool/api/leaderboard', {
+    method: 'POST',
+    body: JSON.stringify({ game: 'penisvagina', name: playerName, score: -finalScore })
+})
+```
+
+### Mobile Touch Controls
+Added touch controls to `index.html` for standalone mobile play:
+
+**Control Layout:**
+- Left side: Left/Right arrow buttons
+- Right side: JUMP and SHOOT buttons
+- Hand-drawn wobbly style with box shadows
+- Active state shows pressed feedback
+
+**Features:**
+- Only visible on touch devices (`ontouchstart` detection)
+- Hidden when in iframe (mann.cool provides its own virtual controller)
+- Multi-touch support with touch tracking via `activeTouches` Map
+- Handles touchstart, touchend, touchcancel, touchmove
+
+### Rotate Phone Message
+Added landscape orientation prompt for mobile:
+- Shows animated phone icon rotating
+- "ROTATE YOUR PHONE" message
+- "This game plays best in landscape mode"
+- CSS media query: `@media screen and (max-width: 768px) and (orientation: portrait)`
+- Hides game container and touch controls in portrait
+
+### Responsive Hat Scaling
+Fixed hats being too large on mobile devices:
+- Added screen scale multiplier: `Math.min(width, height) / 1080`
+- Hat scale now: `baseHatScale * screenScale`
+- Hats scale proportionally to screen size
+
+### Character Selection Fixes
+Fixed missing character images in multiplayer lobby:
+
+**Problem:** CreateRoomScene and JoinRoomScene didn't load character assets
+**Solution:** Added `preload()` method to both scenes:
+```javascript
+preload() {
+    this.load.atlas('penis', 'assets/penis/penis.png', 'assets/penis/penis.json');
+    this.load.image('vagina1', 'assets/vagina/vainga1.png');
+}
+```
+
+**Other Fixes:**
+- Increased selection box size from 100px to 200px
+- Moved "Player 2 joined" text up (0.60 instead of 0.72)
+- Fixed logic to only show "Player 2 joined" when player count >= 2
+
+### Multiplayer Y Position Sync Fix
+Fixed players appearing at wrong heights on different screen sizes:
+
+**Problem:** Y positions sent as absolute pixels, but ground position varies by screen height
+**Solution:** Send Y as offset from ground instead of absolute:
+
+```javascript
+// Sending (in update loop)
+const yOffsetFromGround = this.player.y - this.groundY;
+partySocket.send({ type: 'playerUpdate', yOffsetFromGround, ... });
+
+// Receiving
+this.remotePlayer.y = this.groundY + data.yOffsetFromGround;
+```
+
+Now players appear at correct height relative to ground regardless of screen size.
+
+### PartyKit Configuration
+- Added `compatibilityDate: "2026-01-22"` to silence warnings
+
+### File Structure Update
+```
+assets/
+├── healthPizza/           # Health pizza frames (1,2,4,5,12-17)
+│   ├── healthPizza1.png
+│   ├── healthPizza2.png
+│   └── ... (10 frames total)
+└── infiinity-pizza/       # Invincibility pizza frames (1-10)
+    ├── invinciblePizza1.png
+    └── ... (10 frames)
+```
+
+---
+
+## Previous Session Changes (Jan 21, 2025 - Session 5)
 
 ### Charge-Based Projectile System
 Added hold-to-charge mechanic for projectiles:
@@ -537,11 +853,12 @@ Attempted to fix terrain physics segments getting out of sync with drawn ground 
 
 ## Next Steps / Ideas
 - Add sound effects (shoot, hit, death)
-- ~~Mobile touch controls for movement~~ (DONE - mann.cool virtual controller)
-- High score tracking
+- ~~Mobile touch controls for movement~~ (DONE - mann.cool virtual controller + standalone touch controls)
+- ~~High score tracking~~ (DONE - mann.cool leaderboard integration)
 - Add more enemy types
-- Power-ups
+- ~~Power-ups~~ (DONE - health pizza + invincibility pizza)
 - Improve multiplayer interpolation/smoothing
 - Add player names/labels
 - Sync difficulty state in multiplayer mode
 - Add keyboard/touch nav to multiplayer room scenes (CreateRoomScene, JoinRoomScene)
+- ~~Fix multiplayer Y position sync~~ (DONE - ground-relative coordinates)

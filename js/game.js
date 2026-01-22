@@ -70,7 +70,7 @@ if (window.parent !== window) {
 class DifficultyManager {
     constructor() {
         this.elapsedTime = 0; // in seconds
-        this.maxTime = 600; // 10 minutes to reach full chaos
+        this.maxTime = 300; // 5 minutes to reach full chaos
     }
 
     update(delta) {
@@ -259,13 +259,20 @@ class ModeSelectScene extends Phaser.Scene {
     }
 
     createButton(x, y, text, callback) {
+        // Responsive font and padding
+        const { width, height } = this.scale;
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(36 * screenScale);
+        const paddingX = Math.round(30 * screenScale);
+        const paddingY = Math.round(15 * screenScale);
+
         const btn = this.add.text(x, y, text, {
-            fontSize: '36px',
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold',
             backgroundColor: '#ffffff',
-            padding: { x: 30, y: 15 }
+            padding: { x: paddingX, y: paddingY }
         });
         btn.setOrigin(0.5);
         btn.setInteractive({ useHandCursor: true });
@@ -280,22 +287,25 @@ class ModeSelectScene extends Phaser.Scene {
         btn.on('pointerdown', callback);
 
         // Draw border
-        const border = this.add.rectangle(x, y, btn.width + 8, btn.height + 8);
-        border.setStrokeStyle(3, 0x000000);
+        const borderPadding = 8 * screenScale;
+        const border = this.add.rectangle(x, y, btn.width + borderPadding, btn.height + borderPadding);
+        border.setStrokeStyle(3 * screenScale, 0x000000);
         border.setDepth(-1);
         btn.border = border;
+        btn.screenScale = screenScale; // Store for updateMenuSelection
 
         return btn;
     }
 
     updateMenuSelection() {
         this.menuOptions.forEach((opt, i) => {
+            const screenScale = opt.btn.screenScale || 1;
             if (i === this.selectedIndex) {
                 opt.btn.setStyle({ backgroundColor: '#dddddd' });
-                opt.btn.border.setStrokeStyle(5, 0x000000);
+                opt.btn.border.setStrokeStyle(5 * screenScale, 0x000000);
             } else {
                 opt.btn.setStyle({ backgroundColor: '#ffffff' });
-                opt.btn.border.setStrokeStyle(3, 0x000000);
+                opt.btn.border.setStrokeStyle(3 * screenScale, 0x000000);
             }
         });
     }
@@ -390,13 +400,20 @@ class LobbyChoiceScene extends Phaser.Scene {
     }
 
     createButton(x, y, text, callback) {
+        // Responsive font and padding
+        const { width, height } = this.scale;
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(32 * screenScale);
+        const paddingX = Math.round(25 * screenScale);
+        const paddingY = Math.round(12 * screenScale);
+
         const btn = this.add.text(x, y, text, {
-            fontSize: '32px',
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold',
             backgroundColor: '#ffffff',
-            padding: { x: 25, y: 12 }
+            padding: { x: paddingX, y: paddingY }
         });
         btn.setOrigin(0.5);
         btn.setInteractive({ useHandCursor: true });
@@ -405,22 +422,25 @@ class LobbyChoiceScene extends Phaser.Scene {
         btn.on('pointerout', () => btn.setStyle({ backgroundColor: '#ffffff' }));
         btn.on('pointerdown', callback);
 
-        const border = this.add.rectangle(x, y, btn.width + 8, btn.height + 8);
-        border.setStrokeStyle(3, 0x000000);
+        const borderPadding = 8 * screenScale;
+        const border = this.add.rectangle(x, y, btn.width + borderPadding, btn.height + borderPadding);
+        border.setStrokeStyle(3 * screenScale, 0x000000);
         border.setDepth(-1);
         btn.border = border;
+        btn.screenScale = screenScale; // Store for updateMenuSelection
 
         return btn;
     }
 
     updateMenuSelection() {
         this.menuOptions.forEach((opt, i) => {
+            const screenScale = opt.btn.screenScale || 1;
             if (i === this.selectedIndex) {
                 opt.btn.setStyle({ backgroundColor: '#dddddd' });
-                opt.btn.border.setStrokeStyle(5, 0x000000);
+                opt.btn.border.setStrokeStyle(5 * screenScale, 0x000000);
             } else {
                 opt.btn.setStyle({ backgroundColor: '#ffffff' });
-                opt.btn.border.setStrokeStyle(3, 0x000000);
+                opt.btn.border.setStrokeStyle(3 * screenScale, 0x000000);
             }
         });
     }
@@ -685,6 +705,9 @@ class CreateRoomScene extends Phaser.Scene {
                 break;
 
             case 'gameStart':
+                // Stop intro music before starting game
+                const introMusic = this.sound.get('introMusic');
+                if (introMusic) introMusic.stop();
                 // Transition to game
                 this.scene.start('MainScene', {
                     multiplayer: true,
@@ -762,13 +785,20 @@ class CreateRoomScene extends Phaser.Scene {
     }
 
     createButton(x, y, text, callback) {
+        // Responsive font and padding
+        const { width, height } = this.scale;
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(28 * screenScale);
+        const paddingX = Math.round(20 * screenScale);
+        const paddingY = Math.round(10 * screenScale);
+
         const btn = this.add.text(x, y, text, {
-            fontSize: '28px',
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold',
             backgroundColor: '#ffffff',
-            padding: { x: 20, y: 10 }
+            padding: { x: paddingX, y: paddingY }
         });
         btn.setOrigin(0.5);
         btn.setInteractive({ useHandCursor: true });
@@ -985,6 +1015,9 @@ class JoinRoomScene extends Phaser.Scene {
                 break;
 
             case 'gameStart':
+                // Stop intro music before starting game
+                const introMusicJ = this.sound.get('introMusic');
+                if (introMusicJ) introMusicJ.stop();
                 this.scene.start('MainScene', {
                     multiplayer: true,
                     gameState: data.state
@@ -1001,13 +1034,20 @@ class JoinRoomScene extends Phaser.Scene {
     }
 
     createButton(x, y, text, callback) {
+        // Responsive font and padding
+        const { width, height } = this.scale;
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(28 * screenScale);
+        const paddingX = Math.round(20 * screenScale);
+        const paddingY = Math.round(10 * screenScale);
+
         const btn = this.add.text(x, y, text, {
-            fontSize: '28px',
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold',
             backgroundColor: '#ffffff',
-            padding: { x: 20, y: 10 }
+            padding: { x: paddingX, y: paddingY }
         });
         btn.setOrigin(0.5);
         btn.setInteractive({ useHandCursor: true });
@@ -1081,6 +1121,9 @@ class WaitingScene extends Phaser.Scene {
                 break;
 
             case 'gameStart':
+                // Stop intro music before starting game
+                const introMusicW = this.sound.get('introMusic');
+                if (introMusicW) introMusicW.stop();
                 this.scene.start('MainScene', {
                     multiplayer: true,
                     gameState: data.state
@@ -1107,13 +1150,20 @@ class WaitingScene extends Phaser.Scene {
     }
 
     createButton(x, y, text, callback) {
+        // Responsive font and padding
+        const { width, height } = this.scale;
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(28 * screenScale);
+        const paddingX = Math.round(20 * screenScale);
+        const paddingY = Math.round(10 * screenScale);
+
         const btn = this.add.text(x, y, text, {
-            fontSize: '28px',
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold',
             backgroundColor: '#ffffff',
-            padding: { x: 20, y: 10 }
+            padding: { x: paddingX, y: paddingY }
         });
         btn.setOrigin(0.5);
         btn.setInteractive({ useHandCursor: true });
@@ -1305,6 +1355,10 @@ class MainScene extends Phaser.Scene {
             this.load.image(`vagina${i}`, `assets/vagina/vagina${i}.png`);
         }
 
+        // Load duck images
+        this.load.image('penis_duck', 'assets/penis/penis-duck.png');
+        this.load.image('vagina_duck', 'assets/vagina/vagina-duck.png');
+
         // Load explosion and smoke animations
         for (let i = 1; i <= 4; i++) {
             this.load.image(`explosionBig${i}`, `assets/Explosion/ExplosionBig${i}.png`);
@@ -1338,6 +1392,11 @@ class MainScene extends Phaser.Scene {
         for (let i = 1; i <= 10; i++) {
             this.load.image(`invinciblePizza${i}`, `assets/infiinity-pizza/invinciblePizza${i}.png`);
         }
+
+        // Load boss images
+        this.load.image('boss_kristi', 'assets/kristi.png');
+        this.load.image('boss_miller', 'assets/miller.png');
+        this.load.image('boss_trump', 'assets/trump.png');
     }
 
     init(data) {
@@ -1373,7 +1432,7 @@ class MainScene extends Phaser.Scene {
 
         // Create the ground as a physics body (invisible) - used for flat terrain
         // For dynamic terrain, we'll use segmented physics bodies
-        this.ground = this.add.rectangle(0, this.groundY, 100000, 20, 0x000000, 0);
+        this.ground = this.add.rectangle(0, this.groundY, 10000000, 20, 0x000000, 0);
         this.ground.setOrigin(0.5, 0);
         this.physics.add.existing(this.ground, true);
         this.ground.body.position.y = this.groundY;
@@ -1523,10 +1582,28 @@ class MainScene extends Phaser.Scene {
 
         // Collision between player and pizzas
         this.physics.add.overlap(this.playerBodySensor, this.pizzas, (_sensor, pizza) => {
-            if (pizza.pizzaType === 'health') {
-                this.collectHealthPizza(pizza);
-            } else if (pizza.pizzaType === 'invincible') {
-                this.collectInvincibilityPizza(pizza);
+            // In multiplayer, send message to server; otherwise handle locally
+            if (this.isMultiplayer && partySocket && pizza.pizzaId) {
+                partySocket.send(JSON.stringify({
+                    type: 'pizzaCollect',
+                    pizzaId: pizza.pizzaId,
+                    playerId: playerId
+                }));
+                // Apply effect locally immediately for responsiveness
+                if (pizza.pizzaType === 'health') {
+                    this.collectHealthPizza(pizza);
+                } else if (pizza.pizzaType === 'invincible') {
+                    this.collectInvincibilityPizza(pizza);
+                }
+                // Remove from map
+                if (this.pizzaMap) delete this.pizzaMap[pizza.pizzaId];
+            } else {
+                // Single player - handle locally
+                if (pizza.pizzaType === 'health') {
+                    this.collectHealthPizza(pizza);
+                } else if (pizza.pizzaType === 'invincible') {
+                    this.collectInvincibilityPizza(pizza);
+                }
             }
             pizza.destroy();
         });
@@ -1554,16 +1631,17 @@ class MainScene extends Phaser.Scene {
         // Initialize difficulty manager
         this.difficulty = new DifficultyManager();
 
-        // Check URL for debug time skip (e.g., ?time=120 for 2 minutes)
+        // Check URL for debug skips
         const urlParams = new URLSearchParams(window.location.search);
+        // Time skip (e.g., ?time=120 for 2 minutes of difficulty)
         const startTime = urlParams.get('time');
         if (startTime) {
             this.difficulty.elapsedTime = parseInt(startTime, 10);
         }
-
-        // Create time display (shows elapsed time in single player)
-        if (!this.isMultiplayer) {
-            this.createTimeDisplay();
+        // Position skip (e.g., ?x=45000 to skip to Kristi boss)
+        const startX = urlParams.get('x');
+        if (startX && this.player) {
+            this.player.x = parseInt(startX, 10);
         }
 
         // Spawn hats - only locally for single player, using dynamic timing
@@ -1579,6 +1657,9 @@ class MainScene extends Phaser.Scene {
             this.lastPizzaSpawnTime = 0;
             this.pizzaSpawnInterval = 15000; // Spawn pizza every 15 seconds
         }
+
+        // Boss system - three bosses at fixed positions
+        this.setupBosses();
 
         // Create platforms
         this.platforms = this.physics.add.staticGroup();
@@ -1623,34 +1704,63 @@ class MainScene extends Phaser.Scene {
         this.updateCharacterScale();
         this.player.setBounce(0);
 
-        // FOOT HITBOX: Small circle at feet for terrain collision
-        // This prevents catching on terrain segment edges
+        // HITBOX CONFIGS: Store both standing and duck hitboxes for each character
+        // Foot hitbox = circle at feet for terrain collision
+        // Body hitbox = rectangle for hat/enemy collision
         if (this.selectedCharacter === 'vagina') {
-            this.player.body.setCircle(303);
-            this.player.body.setOffset(135, 1083);
-            // Config for body hitbox (for hat collision) - in sprite coordinates
-            this.bodyHitboxConfig = {
-                width: 517,
-                height: 1012,
-                offsetX: -184,  // Shift left
-                offsetY: -281
+            this.standingHitbox = {
+                foot: { radius: 303, offsetX: 135, offsetY: 1083 },
+                body: { width: 517, height: 1012, offsetX: -184, offsetY: -281 }
+            };
+            this.duckHitbox = {
+                foot: { radius: 303, offsetX: 135, offsetY: 555 },
+                body: { width: 983, height: 550, offsetX: 172, offsetY: -278 }
             };
         } else {
-            this.player.body.setCircle(294);
-            this.player.body.setOffset(134, 1106);
-            // Config for body hitbox (for hat collision) - in sprite coordinates
-            this.bodyHitboxConfig = {
-                width: 1061,
-                height: 1201,
-                offsetX: 0,
-                offsetY: -347
+            this.standingHitbox = {
+                foot: { radius: 294, offsetX: 134, offsetY: 1106 },
+                body: { width: 1061, height: 1201, offsetX: 0, offsetY: -347 }
+            };
+            this.duckHitbox = {
+                foot: { radius: 294, offsetX: 134, offsetY: 573 },
+                body: { width: 1382, height: 617, offsetX: 100, offsetY: -253 }
             };
         }
+
+        // Start with standing hitbox
+        this.isDucking = false;
+        this.applyHitbox(this.standingHitbox);
 
         // BODY HITBOX: Separate invisible sprite for hat/enemy collision
         // This allows the player to have a small foot hitbox for terrain
         // while still having a larger body hitbox for enemy collision
         this.createBodyHitbox();
+    }
+
+    // Apply a hitbox config (standing or duck) to the player
+    applyHitbox(hitboxConfig) {
+        this.currentHitbox = hitboxConfig;
+
+        // Apply foot hitbox to player sprite
+        this.player.body.setCircle(hitboxConfig.foot.radius);
+        this.player.body.setOffset(hitboxConfig.foot.offsetX, hitboxConfig.foot.offsetY);
+
+        // Store body config for the sensor (will be applied in updateBodyHitbox)
+        this.bodyHitboxConfig = hitboxConfig.body;
+
+        // Update the body sensor if it exists
+        if (this.playerBodySensor) {
+            this.updateBodyHitboxSize();
+        }
+    }
+
+    // Update body hitbox sensor size (called when switching duck/standing)
+    updateBodyHitboxSize() {
+        const charScale = this.player.scale;
+        const scaledWidth = this.bodyHitboxConfig.width * charScale;
+        const scaledHeight = this.bodyHitboxConfig.height * charScale;
+        this.playerBodySensor.body.setSize(scaledWidth, scaledHeight);
+        this.playerBodySensor.body.setOffset(-scaledWidth / 2, -scaledHeight / 2);
     }
 
     createBodyHitbox() {
@@ -1702,6 +1812,9 @@ class MainScene extends Phaser.Scene {
         this.remotePlayer.body.setOffset(this.remotePlayerHitbox.offsetX, this.remotePlayerHitbox.offsetY);
 
         this.remotePlayerCharacter = otherPlayer.character;
+
+        // Start idle animation for remote player
+        this.remotePlayer.play('idle_' + this.remotePlayerCharacter);
     }
 
     setupMultiplayerListeners() {
@@ -1719,14 +1832,25 @@ class MainScene extends Phaser.Scene {
                 if (data.playerId !== playerId && this.remotePlayer) {
                     // Update remote player position
                     this.remotePlayer.x = data.x;
-                    this.remotePlayer.y = data.y;
+                    // Convert Y offset from ground to local screen coordinates
+                    if (data.yOffsetFromGround !== undefined) {
+                        this.remotePlayer.y = this.groundY + data.yOffsetFromGround;
+                    } else if (data.y !== undefined) {
+                        // Fallback for backwards compatibility
+                        this.remotePlayer.y = data.y;
+                    }
                     this.remotePlayer.setVelocity(data.velocityX, data.velocityY);
                     this.remotePlayer.setFlipX(!data.facingRight);
 
                     // Update animation
-                    const animKey = data.isWalking ?
-                        'walk_' + this.remotePlayerCharacter :
-                        'idle_' + this.remotePlayerCharacter;
+                    let animKey;
+                    if (data.isDucking) {
+                        animKey = 'duck_' + this.remotePlayerCharacter;
+                    } else if (data.isWalking) {
+                        animKey = 'walk_' + this.remotePlayerCharacter;
+                    } else {
+                        animKey = 'idle_' + this.remotePlayerCharacter;
+                    }
                     if (this.remotePlayer.anims.currentAnim?.key !== animKey) {
                         this.remotePlayer.play(animKey, true);
                     }
@@ -1789,7 +1913,94 @@ class MainScene extends Phaser.Scene {
             case 'gameOver':
                 this.handleMultiplayerGameOver(data);
                 break;
+
+            case 'pizzaSpawn':
+                this.spawnPizzaFromServer(data.pizza);
+                break;
+
+            case 'pizzaCollected':
+                // Remove pizza if it still exists locally
+                if (this.pizzaMap && this.pizzaMap[data.pizzaId]) {
+                    this.pizzaMap[data.pizzaId].destroy();
+                    delete this.pizzaMap[data.pizzaId];
+                }
+                break;
+
+            case 'playerHealed':
+                if (data.sharedLives !== undefined) {
+                    this.sharedLives = data.sharedLives;
+                }
+                if (data.playerId === playerId) {
+                    this.lives = data.livesRemaining;
+                }
+                this.updateLivesDisplay();
+                break;
+
+            case 'playerInvincible':
+                if (data.playerId === playerId) {
+                    this.startInvincibility(data.duration);
+                } else if (this.remotePlayer) {
+                    // Remote player becomes invincible - show rainbow effect
+                    this.startRemoteInvincibility(data.duration);
+                }
+                break;
         }
+    }
+
+    spawnPizzaFromServer(pizzaData) {
+        const { width, height } = this.scale;
+        const camX = this.cameras.main.scrollX;
+
+        // Spawn relative to camera position
+        const spawnX = camX + width + 200;
+        const spawnY = pizzaData.y;
+
+        const isHealthPizza = pizzaData.type === 'health';
+        const pizzaKey = isHealthPizza ? 'healthPizza1' : 'invinciblePizza1';
+        const pizzaAnim = isHealthPizza ? 'healthPizza_float' : 'invinciblePizza_float';
+
+        const pizza = this.pizzas.create(spawnX, spawnY, pizzaKey);
+        pizza.play(pizzaAnim);
+        pizza.body.setAllowGravity(false);
+
+        const pizzaScale = Math.min(width, height) / 1080 * 1.0;
+        pizza.setScale(pizzaScale);
+        pizza.pizzaType = pizzaData.type;
+        pizza.pizzaId = pizzaData.id;
+        pizza.speed = pizzaData.speed;
+        pizza.bobOffset = pizzaData.bobOffset;
+        pizza.baseY = spawnY;
+
+        // Store in map for multiplayer sync
+        if (!this.pizzaMap) this.pizzaMap = {};
+        this.pizzaMap[pizzaData.id] = pizza;
+    }
+
+    startRemoteInvincibility(duration) {
+        if (!this.remotePlayer) return;
+
+        // Rainbow color cycle for remote player
+        const colors = [0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x9400d3];
+        let colorIndex = 0;
+
+        const rainbowTimer = this.time.addEvent({
+            delay: 50,
+            callback: () => {
+                if (this.remotePlayer) {
+                    this.remotePlayer.setTint(colors[colorIndex]);
+                    colorIndex = (colorIndex + 1) % colors.length;
+                }
+            },
+            loop: true
+        });
+
+        // End invincibility after duration
+        this.time.delayedCall(duration, () => {
+            rainbowTimer.destroy();
+            if (this.remotePlayer) {
+                this.remotePlayer.setTint(0xaaaaff); // Back to normal blue tint
+            }
+        });
     }
 
     createRemoteProjectile(x, y, velocityX, velocityY) {
@@ -1824,7 +2035,10 @@ class MainScene extends Phaser.Scene {
 
         // Apply screen-responsive scaling
         const screenScale = Math.min(width, height) / 1080;
-        hat.setScale(hatData.scale * screenScale);
+        const hatScale = hatData.scale * screenScale;
+        hat.setScale(hatScale);
+
+        // Hitbox values tuned for the hat sprite (Phaser scales these with sprite.scale)
         hat.body.setSize(818, 554);
         hat.body.setOffset(1149, 456);
 
@@ -1872,6 +2086,21 @@ class MainScene extends Phaser.Scene {
         this.anims.create({
             key: 'idle_penis',
             frames: [{ key: 'penis', frame: 'penis1.png' }],
+            frameRate: 1,
+            repeat: -1
+        });
+
+        // Duck animations (single frame each)
+        this.anims.create({
+            key: 'duck_vagina',
+            frames: [{ key: 'vagina_duck' }],
+            frameRate: 1,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'duck_penis',
+            frames: [{ key: 'penis_duck' }],
             frameRate: 1,
             repeat: -1
         });
@@ -2017,6 +2246,10 @@ class MainScene extends Phaser.Scene {
 
     collectInvincibilityPizza(_pizza) {
         // Start 10 second invincibility with rainbow effect
+        this.startInvincibility(10000);
+    }
+
+    startInvincibility(duration) {
         this.isPowerInvincible = true;
         this.isInvincible = true; // Also set damage invincibility
 
@@ -2028,8 +2261,8 @@ class MainScene extends Phaser.Scene {
         // Start rainbow effect
         this.startRainbowEffect();
 
-        // End after 10 seconds
-        this.powerInvincibleTimer = this.time.delayedCall(10000, () => {
+        // End after duration
+        this.powerInvincibleTimer = this.time.delayedCall(duration, () => {
             this.stopRainbowEffect();
             this.isPowerInvincible = false;
             this.isInvincible = false;
@@ -2076,6 +2309,318 @@ class MainScene extends Phaser.Scene {
         }
     }
 
+    // ============================================
+    // BOSS SYSTEM
+    // ============================================
+    setupBosses() {
+        const { height } = this.scale;
+
+        // Boss configurations - appear at fixed X positions
+        // At 750 px/sec: 1 min = 45000, 2 min = 90000, 3 min = 135000
+        this.bossConfigs = [
+            { key: 'boss_kristi', name: 'KRISTI', x: 45000, health: 20, hatSpawnRate: 800 },
+            { key: 'boss_miller', name: 'MILLER', x: 90000, health: 30, hatSpawnRate: 600 },
+            { key: 'boss_trump', name: 'TRUMP', x: 135000, health: 50, hatSpawnRate: 400 }
+        ];
+
+        // Debug: show boss hitboxes
+        this.showBossHitboxes = false;
+
+        this.bosses = [];
+        this.activeBoss = null;
+
+        // Create each boss (initially inactive/invisible until player gets close)
+        this.bossConfigs.forEach((config, index) => {
+            const bossY = height * 0.35; // Float in upper portion of screen
+
+            const boss = this.add.sprite(config.x, bossY, config.key);
+
+            // Scale boss to be large and imposing (about 2-3x player size)
+            const bossScale = Math.min(this.scale.width, this.scale.height) / 1080 * 0.8;
+            boss.setScale(bossScale);
+            boss.setDepth(15);
+            boss.setAlpha(0); // Start invisible
+
+            // Boss data
+            boss.bossIndex = index;
+            boss.bossName = config.name;
+            boss.maxHealth = config.health;
+            boss.health = config.health;
+            boss.hatSpawnRate = config.hatSpawnRate;
+            boss.lastHatSpawn = 0;
+            boss.isActive = false;
+            boss.isDead = false;
+            boss.baseY = bossY;
+            boss.bobOffset = Math.random() * Math.PI * 2;
+
+            // Create health bar background (below boss, slightly overlapping)
+            const healthBarY = bossY + boss.displayHeight / 2 - 20;
+            boss.healthBarBg = this.add.rectangle(config.x, healthBarY, 200, 20, 0x333333);
+            boss.healthBarBg.setDepth(16);
+            boss.healthBarBg.setAlpha(0);
+            boss.healthBarBg.setStrokeStyle(3, 0x000000);
+
+            // Create health bar fill
+            boss.healthBarFill = this.add.rectangle(config.x - 100, healthBarY, 200, 16, 0xff0000);
+            boss.healthBarFill.setOrigin(0, 0.5);
+            boss.healthBarFill.setDepth(17);
+            boss.healthBarFill.setAlpha(0);
+
+            // Create boss name text (above health bar)
+            boss.nameText = this.add.text(config.x, healthBarY - 20, config.name, {
+                fontSize: '24px',
+                fontFamily: 'monospace',
+                color: '#ff0000',
+                fontStyle: 'bold'
+            });
+            boss.nameText.setOrigin(0.5);
+            boss.nameText.setDepth(17);
+            boss.nameText.setAlpha(0);
+            boss.nameText.setScrollFactor(1);
+
+            this.bosses.push(boss);
+        });
+    }
+
+    updateBosses(time, delta) {
+        const camX = this.cameras.main.scrollX;
+        const { width } = this.scale;
+
+        this.bosses.forEach(boss => {
+            if (boss.isDead) return;
+
+            // Check if player is approaching this boss (within 1.5 screen widths)
+            const distanceToBoss = boss.x - camX;
+
+            // Activate boss when player gets within range
+            if (!boss.isActive && distanceToBoss < width * 1.5 && distanceToBoss > -width * 0.5) {
+                this.activateBoss(boss);
+            }
+
+            // Update active boss
+            if (boss.isActive) {
+                // Bob up and down
+                boss.bobOffset += delta * 0.002;
+                boss.y = boss.baseY + Math.sin(boss.bobOffset) * 20;
+
+                // Update health bar position (below boss, slightly overlapping)
+                const barY = boss.y + boss.displayHeight / 2 - 20;
+                boss.healthBarBg.setPosition(boss.x, barY);
+                boss.healthBarFill.setPosition(boss.x - 100, barY);
+                boss.nameText.setPosition(boss.x, barY - 20);
+
+                // Update debug hitbox position
+                if (boss.hitboxDebug) {
+                    boss.hitboxDebug.setPosition(boss.x, boss.y);
+                }
+
+                // Manual collision check with projectiles (backup)
+                this.projectiles.getChildren().forEach(proj => {
+                    if (!proj.active) return;
+                    const dx = Math.abs(proj.x - boss.x);
+                    const dy = Math.abs(proj.y - boss.y);
+                    const hitWidth = boss.displayWidth * 0.4;
+                    const hitHeight = boss.displayHeight * 0.4;
+                    if (dx < hitWidth && dy < hitHeight) {
+                        this.hitBoss(boss, proj);
+                    }
+                });
+
+                // Spawn hats from mouth
+                boss.lastHatSpawn += delta;
+                if (boss.lastHatSpawn >= boss.hatSpawnRate) {
+                    this.spawnBossHat(boss);
+                    boss.lastHatSpawn = 0;
+                }
+
+                // Deactivate if player moves too far past
+                if (distanceToBoss < -width) {
+                    // Player passed the boss without killing it - keep it active but stop spawning
+                }
+            }
+        });
+    }
+
+    activateBoss(boss) {
+        boss.isActive = true;
+
+        // Fade in boss and UI
+        this.tweens.add({
+            targets: [boss, boss.healthBarBg, boss.healthBarFill, boss.nameText],
+            alpha: 1,
+            duration: 500,
+            ease: 'Power2'
+        });
+
+        // Add physics body for collision detection (dynamic so it updates position)
+        this.physics.add.existing(boss, false);
+        boss.body.setAllowGravity(false);
+        boss.body.setImmovable(true);
+        boss.body.setSize(boss.displayWidth * 0.8, boss.displayHeight * 0.8);
+
+        // Debug hitbox visualization
+        if (this.showBossHitboxes) {
+            boss.hitboxDebug = this.add.rectangle(
+                boss.x,
+                boss.y,
+                boss.displayWidth * 0.8,
+                boss.displayHeight * 0.8
+            );
+            boss.hitboxDebug.setStrokeStyle(3, 0x00ff00);
+            boss.hitboxDebug.setFillStyle(0x00ff00, 0.2);
+            boss.hitboxDebug.setDepth(20);
+        }
+
+        // Setup collision between projectiles and this boss
+        boss.collider = this.physics.add.overlap(this.projectiles, boss, (proj, b) => {
+            this.hitBoss(b, proj);
+        });
+    }
+
+    spawnBossHat(boss) {
+        const { width, height } = this.scale;
+
+        // Spawn hat from boss's mouth area (center-bottom of sprite)
+        const spawnX = boss.x;
+        const spawnY = boss.y + boss.displayHeight * 0.2; // Mouth area
+
+        // Randomly choose hat type
+        const hatType = Math.random() < 0.5 ? 'maga' : 'ice';
+        const hatKey = hatType === 'maga' ? 'hat1' : 'icehat1';
+        const animKey = hatType === 'maga' ? 'hat_fly' : 'icehat_fly';
+
+        const hat = this.hats.create(spawnX, spawnY, hatKey);
+
+        // Scale hats from boss
+        const screenScale = Math.min(width, height) / 1080;
+        const hatScale = (0.12 + Math.random() * 0.08) * screenScale;
+        hat.setScale(hatScale);
+        hat.play(animKey);
+
+        // Set physics
+        hat.body.setAllowGravity(false);
+
+        // Random trajectory - spray outward from mouth
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8; // Mostly downward/outward
+        const speed = 150 + Math.random() * 100;
+        hat.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed + 50);
+
+        // Hat properties for movement
+        hat.flightPattern = 'straight';
+        hat.elapsedTime = 0;
+        hat.baseY = spawnY;
+        hat.bobOffset = Math.random() * Math.PI * 2;
+        hat.bobSpeed = 2 + Math.random() * 2;
+        hat.speed = speed;
+        hat.fromBoss = true;
+
+        // Hitbox values tuned for the hat sprite (Phaser scales these with sprite.scale)
+        hat.body.setSize(818, 554);
+        hat.body.setOffset(1149, 456);
+    }
+
+    hitBoss(boss, projectile) {
+        if (!boss || !boss.isActive || boss.isDead) return;
+        if (!projectile || !projectile.active) return;
+
+        console.log('Boss hit!', boss.bossName, 'Health:', boss.health);
+
+        // Destroy the projectile
+        projectile.destroy();
+
+        // Damage the boss
+        boss.health--;
+
+        // Flash white then red for visibility
+        boss.setTint(0xffffff);
+        this.time.delayedCall(50, () => {
+            if (!boss.isDead) boss.setTint(0xff0000);
+        });
+        this.time.delayedCall(150, () => {
+            if (!boss.isDead) boss.clearTint();
+        });
+
+        // Update health bar - use scaleX directly
+        const healthPercent = boss.health / boss.maxHealth;
+        boss.healthBarFill.scaleX = healthPercent;
+
+        console.log('Health percent:', healthPercent);
+
+        // Check if boss is dead
+        if (boss.health <= 0) {
+            this.killBoss(boss);
+        }
+
+        // Screen shake
+        this.cameras.main.shake(50, 0.005);
+
+        // Add score
+        this.score++;
+        this.updateScoreDisplay();
+    }
+
+    killBoss(boss) {
+        boss.isDead = true;
+        boss.isActive = false;
+
+        // Big explosion effect
+        for (let i = 0; i < 5; i++) {
+            this.time.delayedCall(i * 100, () => {
+                const offsetX = (Math.random() - 0.5) * boss.displayWidth;
+                const offsetY = (Math.random() - 0.5) * boss.displayHeight;
+                this.playHitEffect(boss.x + offsetX, boss.y + offsetY);
+            });
+        }
+
+        // Screen shake
+        this.cameras.main.shake(500, 0.02);
+
+        // Fade out and destroy
+        const fadeTargets = [boss, boss.healthBarBg, boss.healthBarFill, boss.nameText];
+        if (boss.hitboxDebug) fadeTargets.push(boss.hitboxDebug);
+
+        this.tweens.add({
+            targets: fadeTargets,
+            alpha: 0,
+            scale: boss.scale * 1.5,
+            duration: 500,
+            ease: 'Power2',
+            onComplete: () => {
+                boss.healthBarBg.destroy();
+                boss.healthBarFill.destroy();
+                boss.nameText.destroy();
+                if (boss.hitboxDebug) boss.hitboxDebug.destroy();
+                if (boss.collider) boss.collider.destroy();
+                boss.destroy();
+            }
+        });
+
+        // Bonus score for killing boss
+        this.score += 50;
+        this.updateScoreDisplay();
+
+        // Show "BOSS DEFEATED" text
+        const defeatText = this.add.text(boss.x, boss.y, boss.bossName + ' DEFEATED!', {
+            fontSize: '36px',
+            fontFamily: 'monospace',
+            color: '#ffff00',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        defeatText.setOrigin(0.5);
+        defeatText.setDepth(100);
+
+        this.tweens.add({
+            targets: defeatText,
+            y: boss.y - 100,
+            alpha: 0,
+            duration: 2000,
+            ease: 'Power2',
+            onComplete: () => defeatText.destroy()
+        });
+    }
+
     spawnHat() {
         const { width, height } = this.scale;
 
@@ -2093,9 +2638,11 @@ class MainScene extends Phaser.Scene {
         const scaleRange = this.difficulty ? this.difficulty.getHatScaleRange() : { min: 0.15, max: 0.25 };
         const flightPattern = this.difficulty ? this.difficulty.pickFlightPattern() : 'straight';
 
-        // Spawn position - spread out if spawning multiple
-        const y = 100 + Math.random() * (height * 0.5);
-        const spawnX = this.cameras.main.scrollX + width + 100 + (spawnIndex * 150);
+        // Spawn position - spread out if spawning multiple (responsive Y minimum)
+        const screenScale = Math.min(width, height) / 1080;
+        const minY = 100 * screenScale;
+        const y = minY + Math.random() * (height * 0.5);
+        const spawnX = this.cameras.main.scrollX + width + 100 * screenScale + (spawnIndex * 150 * screenScale);
 
         // Hat type
         const isIceHat = Math.random() < 0.5;
@@ -2107,11 +2654,11 @@ class MainScene extends Phaser.Scene {
         hat.body.setAllowGravity(false);
 
         // Scale from difficulty, adjusted for screen size (responsive)
-        const screenScale = Math.min(width, height) / 1080;
         const baseHatScale = scaleRange.min + Math.random() * (scaleRange.max - scaleRange.min);
         const hatScale = baseHatScale * screenScale;
         hat.setScale(hatScale);
 
+        // Hitbox values tuned for the hat sprite (Phaser scales these with sprite.scale)
         hat.body.setSize(818, 554);
         hat.body.setOffset(1149, 456);
 
@@ -2162,10 +2709,13 @@ class MainScene extends Phaser.Scene {
         const lifeKey = this.selectedCharacter === 'vagina' ? 'vagina1' : 'penis';
         const lifeFrame = this.selectedCharacter === 'vagina' ? undefined : 'penis1.png';
 
-        const iconScale = 0.08;
-        const spacing = 70;
-        const startX = 50;
-        const startY = 70;
+        // Responsive scaling based on screen size
+        const screenScale = Math.min(width, height) / 1080;
+        const iconScale = 0.08 * screenScale;
+        const spacing = 70 * screenScale;
+        const startX = 50 * screenScale;
+        const startY = 70 * screenScale;
+        const fontSize = Math.round(14 * screenScale);
 
         const numLives = this.sharedLives || 3;
 
@@ -2179,8 +2729,8 @@ class MainScene extends Phaser.Scene {
 
         // Label for co-op
         if (this.isMultiplayer && this.currentGameMode === 'coop') {
-            this.livesLabel = this.add.text(startX, startY - 35, 'SHARED', {
-                fontSize: '14px',
+            this.livesLabel = this.add.text(startX, startY - 35 * screenScale, 'SHARED', {
+                fontSize: fontSize + 'px',
                 fontFamily: 'monospace',
                 color: '#000000'
             });
@@ -2197,10 +2747,17 @@ class MainScene extends Phaser.Scene {
     }
 
     createScoreDisplay() {
-        const { width } = this.scale;
+        const { width, height } = this.scale;
 
-        this.scoreText = this.add.text(width - 20, 30, '0', {
-            fontSize: '32px',
+        // Responsive scaling
+        const screenScale = Math.min(width, height) / 1080;
+        const margin = 20 * screenScale;
+        const scoreFontSize = Math.round(32 * screenScale);
+        const labelFontSize = Math.round(14 * screenScale);
+        const remoteScoreFontSize = Math.round(28 * screenScale);
+
+        this.scoreText = this.add.text(width - margin, 30 * screenScale, '0', {
+            fontSize: scoreFontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold'
@@ -2212,8 +2769,8 @@ class MainScene extends Phaser.Scene {
         // For compete mode, show both scores
         if (this.isMultiplayer && this.currentGameMode === 'compete') {
             this.remoteScore = 0;
-            this.scoreLabel = this.add.text(width - 20, 55, 'YOU', {
-                fontSize: '14px',
+            this.scoreLabel = this.add.text(width - margin, 55 * screenScale, 'YOU', {
+                fontSize: labelFontSize + 'px',
                 fontFamily: 'monospace',
                 color: '#000000'
             });
@@ -2221,8 +2778,8 @@ class MainScene extends Phaser.Scene {
             this.scoreLabel.setScrollFactor(0);
             this.scoreLabel.setDepth(100);
 
-            this.remoteScoreText = this.add.text(width - 20, 85, '0', {
-                fontSize: '28px',
+            this.remoteScoreText = this.add.text(width - margin, 85 * screenScale, '0', {
+                fontSize: remoteScoreFontSize + 'px',
                 fontFamily: 'monospace',
                 color: '#6666ff',
                 fontStyle: 'bold'
@@ -2231,8 +2788,8 @@ class MainScene extends Phaser.Scene {
             this.remoteScoreText.setScrollFactor(0);
             this.remoteScoreText.setDepth(100);
 
-            this.remoteScoreLabel = this.add.text(width - 20, 110, 'THEM', {
-                fontSize: '14px',
+            this.remoteScoreLabel = this.add.text(width - margin, 110 * screenScale, 'THEM', {
+                fontSize: labelFontSize + 'px',
                 fontFamily: 'monospace',
                 color: '#6666ff'
             });
@@ -2244,8 +2801,8 @@ class MainScene extends Phaser.Scene {
         // For co-op mode, show combined score
         if (this.isMultiplayer && this.currentGameMode === 'coop') {
             this.combinedScore = 0;
-            this.scoreLabel = this.add.text(width - 20, 55, 'TEAM', {
-                fontSize: '14px',
+            this.scoreLabel = this.add.text(width - margin, 55 * screenScale, 'TEAM', {
+                fontSize: labelFontSize + 'px',
                 fontFamily: 'monospace',
                 color: '#000000'
             });
@@ -2264,10 +2821,14 @@ class MainScene extends Phaser.Scene {
     }
 
     createTimerDisplay() {
-        const { width } = this.scale;
+        const { width, height } = this.scale;
 
-        this.timerText = this.add.text(width / 2, 40, '1:30', {
-            fontSize: '36px',
+        // Responsive scaling
+        const screenScale = Math.min(width, height) / 1080;
+        const fontSize = Math.round(36 * screenScale);
+
+        this.timerText = this.add.text(width / 2, 40 * screenScale, '1:30', {
+            fontSize: fontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000',
             fontStyle: 'bold'
@@ -2278,11 +2839,16 @@ class MainScene extends Phaser.Scene {
     }
 
     createTimeDisplay() {
-        const { width } = this.scale;
+        const { width, height } = this.scale;
+
+        // Responsive scaling
+        const screenScale = Math.min(width, height) / 1080;
+        const timeFontSize = Math.round(24 * screenScale);
+        const difficultyFontSize = Math.round(14 * screenScale);
 
         // Elapsed time display for single player
-        this.elapsedTimeText = this.add.text(width / 2, 30, '0:00', {
-            fontSize: '24px',
+        this.elapsedTimeText = this.add.text(width / 2, 30 * screenScale, '0:00', {
+            fontSize: timeFontSize + 'px',
             fontFamily: 'monospace',
             color: '#000000'
         });
@@ -2291,8 +2857,8 @@ class MainScene extends Phaser.Scene {
         this.elapsedTimeText.setDepth(100);
 
         // Difficulty indicator below time
-        this.difficultyText = this.add.text(width / 2, 55, 'CALM', {
-            fontSize: '14px',
+        this.difficultyText = this.add.text(width / 2, 55 * screenScale, 'CALM', {
+            fontSize: difficultyFontSize + 'px',
             fontFamily: 'monospace',
             color: '#666666'
         });
@@ -2334,13 +2900,16 @@ class MainScene extends Phaser.Scene {
     }
 
     createAmmoBar() {
-        const { width } = this.scale;
+        const { width, height } = this.scale;
+
+        // Responsive scaling
+        const screenScale = Math.min(width, height) / 1080;
 
         // Position vertically under the score (upper right)
-        const barWidth = 15;
-        const barHeight = 80;
-        const barX = width - 25; // Right aligned with score
-        const barY = 70; // Below score text
+        const barWidth = 15 * screenScale;
+        const barHeight = 80 * screenScale;
+        const barX = width - 25 * screenScale; // Right aligned with score
+        const barY = 70 * screenScale; // Below score text
 
         // Create graphics for the hand-drawn ammo bar
         this.ammoBarGraphics = this.add.graphics();
@@ -3350,7 +3919,7 @@ class MainScene extends Phaser.Scene {
 
         if (this.ground) {
             this.ground.setPosition(0, this.groundY);
-            this.ground.setSize(100000, 20);
+            this.ground.setSize(10000000, 20);
             this.ground.body.updateFromGameObject();
         }
 
@@ -3392,7 +3961,11 @@ class MainScene extends Phaser.Scene {
         // Update difficulty manager
         if (this.difficulty) {
             this.difficulty.update(delta);
-            this.updateTimeDisplay();
+        }
+
+        // Update bosses
+        if (this.bosses) {
+            this.updateBosses(time, delta);
         }
 
         // Regenerate ammo
@@ -3430,9 +4003,14 @@ class MainScene extends Phaser.Scene {
 
         // Track if we're walking for network sync
         let isWalking = false;
+        // DUCKING DISABLED
+        // let isDucking = false;
 
         // Get touch controls from mann.cool virtual controller
         const touch = window.touchControls ? window.touchControls.directions : {};
+
+        // DUCKING DISABLED
+        // const wantsToDuck = (this.cursors.down.isDown || touch.down) && this.player.body.touching.down;
 
         // Horizontal movement (keyboard OR virtual controller)
         if (this.cursors.left.isDown || touch.left) {
@@ -3454,9 +4032,49 @@ class MainScene extends Phaser.Scene {
         } else {
             this.player.setVelocityX(0);
             if (this.player.body.touching.down) {
-                this.player.play('idle_' + this.selectedCharacter, true);
+                // DUCKING DISABLED
+                // if (wantsToDuck) {
+                //     this.player.play('duck_' + this.selectedCharacter, true);
+                //     isDucking = true;
+                // } else {
+                    this.player.play('idle_' + this.selectedCharacter, true);
+                // }
             }
         }
+
+        // DUCKING HITBOX DISABLED FOR NOW - timing issues with sprite dimension updates
+        /*
+        // Switch hitboxes when duck state changes
+        // DEBUG: Log every frame when duck-related state changes
+        if (wantsToDuck) {
+            console.log('DUCK STATE CHECK - wantsToDuck:', wantsToDuck,
+                        'isDucking(local):', isDucking,
+                        'this.isDucking:', this.isDucking,
+                        'onGround:', this.player.body.touching.down);
+        }
+
+        if (isDucking && !this.isDucking) {
+            // Just started ducking - switch to duck hitbox
+            console.log('>>> DUCKING - switching to duck hitbox');
+            console.log('duckHitbox.foot:', JSON.stringify(this.duckHitbox.foot));
+            console.log('Current sprite texture:', this.player.texture.key, this.player.frame ? this.player.frame.name : 'no frame');
+            this.applyHitbox(this.duckHitbox);
+            this.isDucking = true;
+        } else if (!isDucking && this.isDucking) {
+            // Just stopped ducking - switch back to standing hitbox
+            // BUT only if sprite has transitioned to standing dimensions
+            // (Phaser doesn't update sprite.height immediately when animation changes)
+            const isStandingSprite = this.player.height > 1500; // Standing sprites are ~1728 tall, duck is 1161
+            if (isStandingSprite) {
+                console.log('>>> STANDING - switching to standing hitbox');
+                console.log('standingHitbox.foot:', JSON.stringify(this.standingHitbox.foot));
+                this.applyHitbox(this.standingHitbox);
+                this.isDucking = false;
+            } else {
+                console.log('Waiting for sprite transition... height:', this.player.height);
+            }
+        }
+        */
 
         // Reset jump count when on ground
         if (this.player.body.touching.down) {
@@ -3492,14 +4110,17 @@ class MainScene extends Phaser.Scene {
         // Send position update to server (rate limited)
         if (this.isMultiplayer && partySocket && time - this.lastNetworkUpdate > this.networkUpdateRate) {
             this.lastNetworkUpdate = time;
+            // Send Y as offset from ground (negative = above ground) for cross-screen-size compatibility
+            const yOffsetFromGround = this.player.y - this.groundY;
             partySocket.send(JSON.stringify({
                 type: 'playerUpdate',
                 x: this.player.x,
-                y: this.player.y,
+                yOffsetFromGround: yOffsetFromGround,
                 velocityX: this.player.body.velocity.x,
                 velocityY: this.player.body.velocity.y,
                 facingRight: this.facingRight,
-                isWalking: isWalking
+                isWalking: isWalking,
+                isDucking: false // DUCKING DISABLED
             }));
         }
 

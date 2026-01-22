@@ -1,6 +1,7 @@
 {
   "name": "penis-vagina",
   "main": "party/server.ts",
+  "compatibilityDate": "2026-01-22",
   "serve": {
     "path": "."
   }

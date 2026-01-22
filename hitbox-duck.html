@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Hitbox Tester</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            background: #fff;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            max-height: 95vh;
+            overflow-y: auto;
+            width: 300px;
+        }
+        #controls label {
+            display: block;
+            margin: 8px 0 4px;
+        }
+        #controls input[type="range"] {
+            width: 180px;
+        }
+        #controls .value {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+        }
+        #output {
+            margin-top: 15px;
+            padding: 10px;
+            background: #000;
+            color: #0f0;
+            font-size: 10px;
+            white-space: pre-wrap;
+            border: 1px solid #0f0;
+        }
+        #game-container {
+            margin-top: 20px;
+        }
+        h3 { margin-bottom: 10px; }
+        h4 {
+            margin-top: 15px;
+            border-top: 1px solid #555;
+            padding-top: 10px;
+            color: #aaa;
+        }
+        .section-foot { color: #0f0; }
+        .section-body { color: #f90; }
+        .char-btn {
+            padding: 8px 16px;
+            cursor: pointer;
+            background: #444;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        .char-btn.active {
+            background: #0a0;
+        }
+        .hitbox-label {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .char-select {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Duck Hitbox Tester</h3>
+
+        <div class="char-select">
+            <button class="char-btn active" id="penisBtn">PENIS</button>
+            <button class="char-btn" id="vaginaBtn">VAGINA</button>
+        </div>
+
+        <h4 class="section-foot">FOOT HITBOX (Terrain - Green)</h4>
+        <p class="hitbox-label">Circle at feet for ground collision</p>
+
+        <label>Foot Radius: <span class="value" id="footRadiusVal">294</span></label>
+        <input type="range" id="footRadiusSlider" min="50" max="500" value="294">
+
+        <label>Foot Offset X: <span class="value" id="footOffsetXVal">134</span></label>
+        <input type="range" id="footOffsetXSlider" min="-500" max="1500" value="134">
+
+        <label>Foot Offset Y: <span class="value" id="footOffsetYVal">573</span></label>
+        <input type="range" id="footOffsetYSlider" min="0" max="2000" value="573">
+
+        <h4 class="section-body">BODY HITBOX (Enemy Collision - Orange)</h4>
+        <p class="hitbox-label">Rectangle for hat/enemy collision</p>
+
+        <label>Body Width: <span class="value" id="bodyWidthVal">1382</span></label>
+        <input type="range" id="bodyWidthSlider" min="100" max="2000" value="1382">
+
+        <label>Body Height: <span class="value" id="bodyHeightVal">617</span></label>
+        <input type="range" id="bodyHeightSlider" min="100" max="1500" value="617">
+
+        <label>Body Offset X: <span class="value" id="bodyOffsetXVal">100</span></label>
+        <input type="range" id="bodyOffsetXSlider" min="-500" max="500" value="100">
+        <p class="hitbox-label">Negative = shift left</p>
+
+        <label>Body Offset Y: <span class="value" id="bodyOffsetYVal">-253</span></label>
+        <input type="range" id="bodyOffsetYSlider" min="-1000" max="500" value="-253">
+        <p class="hitbox-label">Negative = higher up on character</p>
+
+        <div id="output">Loading...</div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script>
+        let sprite;
+        let bodyHitboxZone;
+        let debugGraphics;
+        let currentCharacter = 'penis';
+        let scene;
+
+        // Store configs per character (matches game.js duckHitbox values)
+        // Duck sprite is 1608 x 1161 pixels
+        // offsetY = spriteHeight - (radius * 2) to position foot at bottom
+        const configs = {
+            penis: {
+                foot: { radius: 294, offsetX: 134, offsetY: 573 },
+                body: { width: 1382, height: 617, offsetX: 100, offsetY: -253 }
+            },
+            vagina: {
+                foot: { radius: 303, offsetX: 135, offsetY: 555 },
+                body: { width: 983, height: 550, offsetX: 172, offsetY: -278 }
+            }
+        };
+
+        // Current active config (reference to one of the above)
+        let footConfig = configs.penis.foot;
+        let bodyConfig = configs.penis.body;
+
+        class TestScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'TestScene' });
+            }
+
+            preload() {
+                this.load.image('penis_duck', 'assets/penis/penis-duck.png');
+                this.load.image('vagina_duck', 'assets/vagina/vagina-duck.png');
+            }
+
+            create() {
+                scene = this;
+
+                // Create ground platform (static body)
+                const groundY = 600;
+                this.ground = this.add.rectangle(450, groundY, 900, 20, 0x333333);
+                this.physics.add.existing(this.ground, true); // true = static
+
+                // Draw ground line for reference
+                this.groundGraphics = this.add.graphics();
+                this.groundGraphics.lineStyle(3, 0x000000, 0.5);
+                this.groundGraphics.lineBetween(0, groundY - 10, 900, groundY - 10);
+
+                // Create sprite with physics and gravity
+                sprite = this.physics.add.sprite(450, 300, 'penis_duck');
+                sprite.setScale(0.35);
+                sprite.setCollideWorldBounds(true);
+
+                // Collide with ground
+                this.physics.add.collider(sprite, this.ground);
+
+                // Create body hitbox zone (separate from foot hitbox)
+                bodyHitboxZone = this.add.zone(sprite.x, sprite.y, 1, 1);
+                this.physics.add.existing(bodyHitboxZone, false);
+                bodyHitboxZone.body.setAllowGravity(false);
+                bodyHitboxZone.body.setImmovable(true);
+
+                // Debug graphics for custom colored hitbox visualization
+                debugGraphics = this.add.graphics();
+
+                // Set initial hitboxes
+                updateHitboxes();
+            }
+
+            update() {
+                // Update body hitbox zone position to follow sprite (like in game.js)
+                if (bodyHitboxZone && sprite) {
+                    const scale = sprite.scale;
+                    bodyHitboxZone.x = sprite.x + (bodyConfig.offsetX * scale);
+                    bodyHitboxZone.y = sprite.y + (bodyConfig.offsetY * scale);
+                }
+                drawDebugHitboxes();
+            }
+        }
+
+        function switchCharacter(char) {
+            currentCharacter = char;
+            footConfig = configs[char].foot;
+            bodyConfig = configs[char].body;
+
+            // Update button states
+            document.getElementById('penisBtn').classList.toggle('active', char === 'penis');
+            document.getElementById('vaginaBtn').classList.toggle('active', char === 'vagina');
+
+            // Update sprite
+            if (sprite) {
+                sprite.setTexture(char + '_duck');
+            }
+
+            // Update slider values to match loaded config
+            document.getElementById('footRadiusSlider').value = footConfig.radius;
+            document.getElementById('footRadiusVal').textContent = footConfig.radius;
+            document.getElementById('footOffsetXSlider').value = footConfig.offsetX;
+            document.getElementById('footOffsetXVal').textContent = footConfig.offsetX;
+            document.getElementById('footOffsetYSlider').value = footConfig.offsetY;
+            document.getElementById('footOffsetYVal').textContent = footConfig.offsetY;
+
+            document.getElementById('bodyWidthSlider').value = bodyConfig.width;
+            document.getElementById('bodyWidthVal').textContent = bodyConfig.width;
+            document.getElementById('bodyHeightSlider').value = bodyConfig.height;
+            document.getElementById('bodyHeightVal').textContent = bodyConfig.height;
+            document.getElementById('bodyOffsetXSlider').value = bodyConfig.offsetX;
+            document.getElementById('bodyOffsetXVal').textContent = bodyConfig.offsetX;
+            document.getElementById('bodyOffsetYSlider').value = bodyConfig.offsetY;
+            document.getElementById('bodyOffsetYVal').textContent = bodyConfig.offsetY;
+
+            updateHitboxes();
+        }
+
+        function updateHitboxes() {
+            if (!sprite || !sprite.body) return;
+
+            const scale = sprite.scale;
+
+            // Update foot hitbox (on the sprite)
+            sprite.body.setCircle(footConfig.radius);
+            sprite.body.setOffset(footConfig.offsetX, footConfig.offsetY);
+
+            // Update body hitbox zone
+            const scaledWidth = bodyConfig.width * scale;
+            const scaledHeight = bodyConfig.height * scale;
+            bodyHitboxZone.body.setSize(scaledWidth, scaledHeight);
+            bodyHitboxZone.body.setOffset(-scaledWidth / 2, -scaledHeight / 2);
+
+            // Position the body hitbox
+            bodyHitboxZone.x = sprite.x + (bodyConfig.offsetX * scale);
+            bodyHitboxZone.y = sprite.y + (bodyConfig.offsetY * scale);
+
+            updateOutput();
+        }
+
+        function drawDebugHitboxes() {
+            if (!debugGraphics || !sprite) return;
+
+            debugGraphics.clear();
+            const scale = sprite.scale;
+
+            // Draw foot hitbox (green circle)
+            debugGraphics.lineStyle(3, 0x00ff00, 1);
+            const footCenterX = sprite.x - (sprite.width * scale / 2) + (footConfig.offsetX * scale) + (footConfig.radius * scale);
+            const footCenterY = sprite.y - (sprite.height * scale / 2) + (footConfig.offsetY * scale) + (footConfig.radius * scale);
+            debugGraphics.strokeCircle(footCenterX, footCenterY, footConfig.radius * scale);
+
+            // Draw body hitbox (orange rectangle)
+            debugGraphics.lineStyle(3, 0xff6600, 1);
+            const bodyX = bodyHitboxZone.x - (bodyConfig.width * scale / 2);
+            const bodyY = bodyHitboxZone.y - (bodyConfig.height * scale / 2);
+            debugGraphics.strokeRect(bodyX, bodyY, bodyConfig.width * scale, bodyConfig.height * scale);
+        }
+
+        function updateOutput() {
+            const charName = currentCharacter.toUpperCase();
+            const output = `// ${charName} DUCK HITBOX CONFIG
+
+// Foot hitbox (terrain)
+duck_${currentCharacter}_foot: {
+    radius: ${footConfig.radius},
+    offsetX: ${footConfig.offsetX},
+    offsetY: ${footConfig.offsetY}
+}
+
+// Body hitbox (enemy collision)
+duck_${currentCharacter}_body: {
+    width: ${bodyConfig.width},
+    height: ${bodyConfig.height},
+    offsetX: ${bodyConfig.offsetX},
+    offsetY: ${bodyConfig.offsetY}
+}
+
+// Code to paste in game.js:
+// In setupDuckHitbox() or similar:
+if (char === '${currentCharacter}') {
+    body.setCircle(${footConfig.radius});
+    body.setOffset(${footConfig.offsetX}, ${footConfig.offsetY});
+    // bodyHitbox: ${bodyConfig.width}x${bodyConfig.height}
+    // offset: (${bodyConfig.offsetX}, ${bodyConfig.offsetY})
+}`;
+
+            document.getElementById('output').textContent = output;
+        }
+
+        // Character switch buttons
+        document.getElementById('penisBtn').addEventListener('click', () => switchCharacter('penis'));
+        document.getElementById('vaginaBtn').addEventListener('click', () => switchCharacter('vagina'));
+
+        // Foot hitbox sliders
+        document.getElementById('footRadiusSlider').addEventListener('input', (e) => {
+            footConfig.radius = parseInt(e.target.value);
+            document.getElementById('footRadiusVal').textContent = footConfig.radius;
+            updateHitboxes();
+        });
+
+        document.getElementById('footOffsetXSlider').addEventListener('input', (e) => {
+            footConfig.offsetX = parseInt(e.target.value);
+            document.getElementById('footOffsetXVal').textContent = footConfig.offsetX;
+            updateHitboxes();
+        });
+
+        document.getElementById('footOffsetYSlider').addEventListener('input', (e) => {
+            footConfig.offsetY = parseInt(e.target.value);
+            document.getElementById('footOffsetYVal').textContent = footConfig.offsetY;
+            updateHitboxes();
+        });
+
+        // Body hitbox sliders
+        document.getElementById('bodyWidthSlider').addEventListener('input', (e) => {
+            bodyConfig.width = parseInt(e.target.value);
+            document.getElementById('bodyWidthVal').textContent = bodyConfig.width;
+            updateHitboxes();
+        });
+
+        document.getElementById('bodyHeightSlider').addEventListener('input', (e) => {
+            bodyConfig.height = parseInt(e.target.value);
+            document.getElementById('bodyHeightVal').textContent = bodyConfig.height;
+            updateHitboxes();
+        });
+
+        document.getElementById('bodyOffsetXSlider').addEventListener('input', (e) => {
+            bodyConfig.offsetX = parseInt(e.target.value);
+            document.getElementById('bodyOffsetXVal').textContent = bodyConfig.offsetX;
+            updateHitboxes();
+        });
+
+        document.getElementById('bodyOffsetYSlider').addEventListener('input', (e) => {
+            bodyConfig.offsetY = parseInt(e.target.value);
+            document.getElementById('bodyOffsetYVal').textContent = bodyConfig.offsetY;
+            updateHitboxes();
+        });
+
+        // Phaser config
+        const config = {
+            type: Phaser.AUTO,
+            width: 900,
+            height: 700,
+            parent: 'game-container',
+            backgroundColor: '#ffffff',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 800 },
+                    debug: true
+                }
+            },
+            scene: TestScene
+        };
+
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>

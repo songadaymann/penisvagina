@@ -4,8 +4,8 @@
 			"image": "penis.png",
 			"format": "RGBA8888",
 			"size": {
-				"w": 4103,
-				"h": 3397
+				"w": 4989,
+				"h": 3373
 			},
 			"scale": 1,
 			"frames": [
@@ -31,7 +31,7 @@
 					}
 				},
 				{
-					"filename": "penis1.png",
+					"filename": "penis2.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -39,16 +39,16 @@
 						"h": 1728
 					},
 					"spriteSourceSize": {
-						"x": 44,
+						"x": 0,
 						"y": 0,
-						"w": 1041,
-						"h": 1665
+						"w": 1085,
+						"h": 1641
 					},
 					"frame": {
 						"x": 1,
 						"y": 1731,
-						"w": 1041,
-						"h": 1665
+						"w": 1085,
+						"h": 1641
 					}
 				},
 				{
@@ -73,28 +73,7 @@
 					}
 				},
 				{
-					"filename": "penis5.png",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 1085,
-						"h": 1728
-					},
-					"spriteSourceSize": {
-						"x": 44,
-						"y": 0,
-						"w": 1041,
-						"h": 1665
-					},
-					"frame": {
-						"x": 1044,
-						"y": 1731,
-						"w": 1041,
-						"h": 1665
-					}
-				},
-				{
-					"filename": "penis2.png",
+					"filename": "penis6.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -108,8 +87,8 @@
 						"h": 1641
 					},
 					"frame": {
-						"x": 2087,
-						"y": 1,
+						"x": 1088,
+						"y": 1731,
 						"w": 1085,
 						"h": 1641
 					}
@@ -129,14 +108,14 @@
 						"h": 1701
 					},
 					"frame": {
-						"x": 3174,
+						"x": 2087,
 						"y": 1,
 						"w": 928,
 						"h": 1701
 					}
 				},
 				{
-					"filename": "penis6.png",
+					"filename": "penis1.png",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -144,16 +123,37 @@
 						"h": 1728
 					},
 					"spriteSourceSize": {
-						"x": 0,
+						"x": 44,
 						"y": 0,
-						"w": 1085,
-						"h": 1641
+						"w": 1041,
+						"h": 1665
 					},
 					"frame": {
-						"x": 2087,
-						"y": 1644,
+						"x": 2175,
+						"y": 1704,
+						"w": 1041,
+						"h": 1665
+					}
+				},
+				{
+					"filename": "penis5.png",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
 						"w": 1085,
-						"h": 1641
+						"h": 1728
+					},
+					"spriteSourceSize": {
+						"x": 44,
+						"y": 0,
+						"w": 1041,
+						"h": 1665
+					},
+					"frame": {
+						"x": 3017,
+						"y": 1,
+						"w": 1041,
+						"h": 1665
 					}
 				},
 				{
@@ -171,10 +171,31 @@
 						"h": 1665
 					},
 					"frame": {
-						"x": 3174,
-						"y": 1704,
+						"x": 4060,
+						"y": 1,
 						"w": 928,
 						"h": 1665
+					}
+				},
+				{
+					"filename": "penis-duck.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 1608,
+						"h": 1161
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 1608,
+						"h": 1161
+					},
+					"frame": {
+						"x": 3218,
+						"y": 1668,
+						"w": 1608,
+						"h": 1161
 					}
 				}
 			]
@@ -183,6 +204,6 @@
 	"meta": {
 		"app": "https://www.codeandweb.com/texturepacker",
 		"version": "3.0",
-		"smartupdate": "$TexturePacker:SmartUpdate:72c198f78501c689550419837d4b87b3:13be2c5e75e19818279f0ea24f10ebbf:a2d35f30807d2f4b846ebcc6df85eb83$"
+		"smartupdate": "$TexturePacker:SmartUpdate:2927db6d4b3e0f76a0a0e00f336f3707:3df7514b1def7eb97481e2fb8d77afaf:a2d35f30807d2f4b846ebcc6df85eb83$"
 	}
 }

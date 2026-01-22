@@ -30,11 +30,22 @@ interface Hat {
   bobSpeed: number;
 }
 
+interface Pizza {
+  id: string;
+  type: "health" | "invincible";
+  x: number;
+  y: number;
+  baseY: number;
+  speed: number;
+  bobOffset: number;
+}
+
 interface GameState {
   phase: GamePhase;
   mode: GameMode | null;
   players: Record<string, Player>;
   hats: Hat[];
+  pizzas: Pizza[];
   hostId: string | null;
   roomCode: string;
   // Co-op specific
@@ -54,6 +65,7 @@ type ClientMessage =
   | { type: "shoot"; x: number; y: number; velocityX: number; velocityY: number }
   | { type: "hatHit"; hatId: string; playerId: string }
   | { type: "playerHit"; playerId: string }
+  | { type: "pizzaCollect"; pizzaId: string; playerId: string }
   | { type: "restartGame" };
 
 // Message types to client
@@ -67,7 +79,11 @@ type ServerMessage =
   | { type: "playerShoot"; playerId: string; x: number; y: number; velocityX: number; velocityY: number }
   | { type: "hatSpawn"; hat: Hat }
   | { type: "hatDestroyed"; hatId: string; byPlayerId: string }
+  | { type: "pizzaSpawn"; pizza: Pizza }
+  | { type: "pizzaCollected"; pizzaId: string; byPlayerId: string; pizzaType: "health" | "invincible" }
   | { type: "playerDamaged"; playerId: string; livesRemaining: number; sharedLives?: number }
+  | { type: "playerHealed"; playerId: string; livesRemaining: number; sharedLives?: number }
+  | { type: "playerInvincible"; playerId: string; duration: number }
   | { type: "scoreUpdate"; playerId: string; score: number; combinedScore?: number }
   | { type: "timerUpdate"; timeRemaining: number }
   | { type: "gameOver"; winner?: string; finalScores: Record<string, number>; combinedScore?: number };
@@ -87,9 +103,15 @@ function generateHatId(): string {
   return `hat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Generate unique pizza ID
+function generatePizzaId(): string {
+  return `pizza_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export default class GameServer implements Party.Server {
   state: GameState;
   hatSpawnInterval: ReturnType<typeof setInterval> | null = null;
+  pizzaSpawnInterval: ReturnType<typeof setInterval> | null = null;
   gameTimerInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(readonly room: Party.Room) {
@@ -99,6 +121,7 @@ export default class GameServer implements Party.Server {
       mode: null,
       players: {},
       hats: [],
+      pizzas: [],
       hostId: null,
       roomCode: this.room.id.toUpperCase().slice(0, 4) || generateRoomCode(),
       sharedLives: 6,
@@ -170,6 +193,9 @@ export default class GameServer implements Party.Server {
         break;
       case "playerHit":
         this.handlePlayerHit(data.playerId);
+        break;
+      case "pizzaCollect":
+        this.handlePizzaCollect(data.pizzaId, data.playerId);
         break;
       case "restartGame":
         this.handleRestartGame(sender);
@@ -248,6 +274,7 @@ export default class GameServer implements Party.Server {
 
     this.state.phase = "playing";
     this.state.hats = [];
+    this.state.pizzas = [];
 
     // Reset player positions
     const playerIds = Object.keys(this.state.players);
@@ -263,8 +290,9 @@ export default class GameServer implements Party.Server {
       state: this.state,
     });
 
-    // Start spawning hats
+    // Start spawning hats and pizzas
     this.startHatSpawning();
+    this.startPizzaSpawning();
 
     // Start timer for compete mode
     if (this.state.mode === "compete") {
@@ -379,15 +407,71 @@ export default class GameServer implements Party.Server {
     }, 1500);
   }
 
+  handlePizzaCollect(pizzaId: string, playerId: string) {
+    // Find and remove the pizza
+    const pizzaIndex = this.state.pizzas.findIndex(p => p.id === pizzaId);
+    if (pizzaIndex === -1) return; // Already collected
+
+    const pizza = this.state.pizzas[pizzaIndex];
+    this.state.pizzas.splice(pizzaIndex, 1);
+
+    // Handle the power-up effect
+    if (pizza.type === "health") {
+      // Restore a life
+      if (this.state.mode === "coop") {
+        this.state.sharedLives = Math.min(6, this.state.sharedLives + 1);
+        this.broadcast({
+          type: "playerHealed",
+          playerId,
+          livesRemaining: this.state.players[playerId]?.lives || 3,
+          sharedLives: this.state.sharedLives,
+        });
+      } else if (this.state.players[playerId]) {
+        this.state.players[playerId].lives = Math.min(3, this.state.players[playerId].lives + 1);
+        this.broadcast({
+          type: "playerHealed",
+          playerId,
+          livesRemaining: this.state.players[playerId].lives,
+        });
+      }
+    } else if (pizza.type === "invincible") {
+      // Grant invincibility
+      if (this.state.players[playerId]) {
+        this.state.players[playerId].isInvincible = true;
+        this.broadcast({
+          type: "playerInvincible",
+          playerId,
+          duration: 10000, // 10 seconds
+        });
+        // Reset invincibility after duration
+        setTimeout(() => {
+          if (this.state.players[playerId]) {
+            this.state.players[playerId].isInvincible = false;
+          }
+        }, 10000);
+      }
+    }
+
+    // Broadcast pizza collection to all
+    this.broadcast({
+      type: "pizzaCollected",
+      pizzaId,
+      byPlayerId: playerId,
+      pizzaType: pizza.type,
+    });
+  }
+
   handleRestartGame(sender: Party.Connection) {
     if (sender.id !== this.state.hostId) return;
 
     // Reset to lobby
     this.stopHatSpawning();
+    this.stopPizzaSpawning();
     this.stopGameTimer();
 
     this.state.phase = "lobby";
     this.state.hats = [];
+    this.state.pizzas = [];
     this.state.sharedLives = 6;
     this.state.combinedScore = 0;
     this.state.timeRemaining = this.state.gameDuration;
@@ -447,6 +531,42 @@ export default class GameServer implements Party.Server {
     }
   }
 
+  startPizzaSpawning() {
+    // Spawn a pizza every 15 seconds
+    const spawnPizza = () => {
+      if (this.state.phase !== "playing") return;
+
+      const pizza: Pizza = {
+        id: generatePizzaId(),
+        type: Math.random() < 0.5 ? "health" : "invincible",
+        x: 2000, // Will be adjusted client-side based on camera
+        y: 150 + Math.random() * 250,
+        baseY: 150 + Math.random() * 250,
+        speed: 80 + Math.random() * 40,
+        bobOffset: Math.random() * Math.PI * 2,
+      };
+
+      this.state.pizzas.push(pizza);
+
+      this.broadcast({
+        type: "pizzaSpawn",
+        pizza,
+      });
+    };
+
+    // Continue spawning every 15 seconds
+    this.pizzaSpawnInterval = setInterval(() => {
+      spawnPizza();
+    }, 15000);
+  }
+
+  stopPizzaSpawning() {
+    if (this.pizzaSpawnInterval) {
+      clearInterval(this.pizzaSpawnInterval);
+      this.pizzaSpawnInterval = null;
+    }
+  }
+
   startGameTimer() {
     this.state.timeRemaining = this.state.gameDuration;
 
@@ -474,6 +594,7 @@ export default class GameServer implements Party.Server {
   endGame() {
     this.state.phase = "gameover";
     this.stopHatSpawning();
+    this.stopPizzaSpawning();
     this.stopGameTimer();
 
     // Determine winner for compete mode
@@ -503,6 +624,7 @@ export default class GameServer implements Party.Server {
 
   resetGame() {
     this.stopHatSpawning();
+    this.stopPizzaSpawning();
     this.stopGameTimer();
 
     this.state = {
@@ -510,6 +632,7 @@ export default class GameServer implements Party.Server {
       mode: null,
       players: {},
       hats: [],
+      pizzas: [],
       hostId: null,
       roomCode: this.state.roomCode,
       sharedLives: 6,
