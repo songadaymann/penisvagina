@@ -527,8 +527,8 @@ class CreateRoomScene extends Phaser.Scene {
             color: '#666666'
         }).setOrigin(0.5);
 
-        // Player 2 info
-        this.player2Text = this.add.text(width / 2, height * 0.72, '', {
+        // Player 2 info (positioned above mode selection)
+        this.player2Text = this.add.text(width / 2, height * 0.60, '', {
             fontSize: '20px',
             fontFamily: 'monospace',
             color: '#00aa00',
@@ -536,7 +536,7 @@ class CreateRoomScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Mode selection (hidden until player 2 joins)
-        this.modeTitle = this.add.text(width / 2, height * 0.66, 'CHOOSE MODE:', {
+        this.modeTitle = this.add.text(width / 2, height * 0.68, 'CHOOSE MODE:', {
             fontSize: '24px',
             fontFamily: 'monospace',
             color: '#000000',
@@ -706,9 +706,12 @@ class CreateRoomScene extends Phaser.Scene {
     updatePlayerCount() {
         // Will be called with playerJoined event
         if (this.lobbyState) {
-            this.showPlayer2Info(this.lobbyState);
+            const playerCount = Object.keys(this.lobbyState.players).length;
+            if (playerCount >= 2) {
+                this.showPlayer2Info(this.lobbyState);
+                this.showModeSelection();
+            }
         }
-        this.showModeSelection();
     }
 
     showPlayer2Info(state) {
@@ -718,9 +721,8 @@ class CreateRoomScene extends Phaser.Scene {
         if (otherPlayer) {
             const charName = otherPlayer.character === 'penis' ? 'PENIS' : 'VAGINA';
             this.player2Text.setText(`Player 2 joined as ${charName}!`);
-        } else {
-            this.player2Text.setText('Player 2 joined!');
         }
+        // Don't show anything if no other player found
     }
 
     showModeSelection() {
