@@ -582,7 +582,7 @@ class CreateRoomScene extends Phaser.Scene {
         const { width, height } = this.scale;
         const charY = height * 0.32;
         const charSpacing = width * 0.25;
-        const boxSize = 100;
+        const boxSize = 200;
 
         this.penisBox.clear();
         this.vaginaBox.clear();
@@ -900,7 +900,7 @@ class JoinRoomScene extends Phaser.Scene {
         const { width, height } = this.scale;
         const charY = height * 0.32;
         const charSpacing = width * 0.25;
-        const boxSize = 100;
+        const boxSize = 200;
 
         this.penisBox.clear();
         this.vaginaBox.clear();
