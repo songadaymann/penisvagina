@@ -4325,20 +4325,12 @@ class GameOverScene extends Phaser.Scene {
             window.playfunSDK.savePoints();
         }
 
-        // Name input section
-        this.createNameInput(width, height);
-
-        // Leaderboard section
-        this.createLeaderboardSection(width, height);
-
-        // Fetch leaderboard
-        this.fetchLeaderboard();
-
         // Restart button
         this.createRestartButton(width, height);
 
-        // Keyboard controls
+        // Keyboard/touch to restart
         this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        this.spaceBar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     }
 
     drawWobblyBorder(width, height) {
@@ -4385,201 +4377,8 @@ class GameOverScene extends Phaser.Scene {
         graphics.strokePath();
     }
 
-    createNameInput(width, height) {
-        this.playerName = '';
-        this.maxNameLength = 12;
-        this.nameSubmitted = false;
-
-        // Label
-        this.add.text(width / 2, height * 0.32, 'ENTER NAME FOR LEADERBOARD:', {
-            fontSize: '16px',
-            fontFamily: 'monospace',
-            color: '#000000'
-        }).setOrigin(0.5);
-
-        // Name input box (hand-drawn style)
-        const inputBoxWidth = 200;
-        const inputBoxHeight = 40;
-        const inputBoxX = width / 2 - inputBoxWidth / 2;
-        const inputBoxY = height * 0.36;
-
-        // Draw wobbly input box
-        const inputGraphics = this.add.graphics();
-        inputGraphics.lineStyle(3, 0x000000);
-        inputGraphics.fillStyle(0xffffff);
-
-        inputGraphics.beginPath();
-        inputGraphics.moveTo(inputBoxX + 2, inputBoxY);
-        inputGraphics.lineTo(inputBoxX + inputBoxWidth - 2, inputBoxY + 1);
-        inputGraphics.lineTo(inputBoxX + inputBoxWidth, inputBoxY + inputBoxHeight - 1);
-        inputGraphics.lineTo(inputBoxX + 1, inputBoxY + inputBoxHeight);
-        inputGraphics.closePath();
-        inputGraphics.fillPath();
-        inputGraphics.strokePath();
-
-        // Name text display
-        this.nameText = this.add.text(width / 2, height * 0.36 + inputBoxHeight / 2, '_', {
-            fontSize: '24px',
-            fontFamily: 'monospace',
-            color: '#000000'
-        }).setOrigin(0.5);
-
-        // Submit button
-        this.submitBtn = this.add.text(width / 2, height * 0.44, '[ SUBMIT SCORE ]', {
-            fontSize: '18px',
-            fontFamily: 'monospace',
-            color: '#000000',
-            backgroundColor: '#dddddd',
-            padding: { x: 15, y: 8 }
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-        this.submitBtn.on('pointerover', () => this.submitBtn.setStyle({ backgroundColor: '#bbbbbb' }));
-        this.submitBtn.on('pointerout', () => this.submitBtn.setStyle({ backgroundColor: '#dddddd' }));
-        this.submitBtn.on('pointerdown', () => this.submitScore());
-
-        // Keyboard input for name
-        this.input.keyboard.on('keydown', (event) => {
-            if (this.nameSubmitted) return;
-
-            if (event.key === 'Backspace') {
-                this.playerName = this.playerName.slice(0, -1);
-            } else if (event.key === 'Enter') {
-                this.submitScore();
-            } else if (event.key.length === 1 && this.playerName.length < this.maxNameLength) {
-                // Only allow alphanumeric, space, underscore, hyphen
-                if (/^[a-zA-Z0-9 _-]$/.test(event.key)) {
-                    this.playerName += event.key;
-                }
-            }
-
-            this.updateNameDisplay();
-        });
-    }
-
-    updateNameDisplay() {
-        const displayName = this.playerName || '';
-        const cursor = this.nameSubmitted ? '' : '_';
-        this.nameText.setText(displayName + cursor);
-    }
-
-    createLeaderboardSection(width, height) {
-        // Leaderboard title
-        this.add.text(width / 2, height * 0.52, '~ HIGH SCORES ~', {
-            fontSize: '24px',
-            fontFamily: 'monospace',
-            color: '#000000',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        // Loading text (replaced when data loads)
-        this.leaderboardText = this.add.text(width / 2, height * 0.65, 'Loading...', {
-            fontSize: '16px',
-            fontFamily: 'monospace',
-            color: '#666666'
-        }).setOrigin(0.5);
-    }
-
-    async fetchLeaderboard() {
-        try {
-            const response = await fetch('https://mann.cool/api/leaderboard?game=penisvagina&limit=10');
-            const data = await response.json();
-
-            if (data.success && data.entries) {
-                this.displayLeaderboard(data.entries);
-            } else {
-                this.leaderboardText.setText('No scores yet!');
-            }
-        } catch (error) {
-            console.error('Failed to fetch leaderboard:', error);
-            this.leaderboardText.setText('Could not load leaderboard');
-        }
-    }
-
-    displayLeaderboard(entries) {
-        const { width, height } = this.scale;
-
-        // Clear loading text
-        this.leaderboardText.destroy();
-
-        // Display entries
-        const startY = height * 0.58;
-        const lineHeight = 24;
-
-        if (entries.length === 0) {
-            this.add.text(width / 2, startY, 'No scores yet - be the first!', {
-                fontSize: '16px',
-                fontFamily: 'monospace',
-                color: '#666666'
-            }).setOrigin(0.5);
-            return;
-        }
-
-        entries.forEach((entry, index) => {
-            const y = startY + index * lineHeight;
-            // Score is stored as negative, so negate it back
-            const displayScore = Math.abs(entry.score);
-            const rank = index + 1;
-            const name = entry.name || 'Anonymous';
-
-            // Highlight if this might be the player's new score
-            const isHighlight = displayScore === this.finalScore;
-            const color = isHighlight ? '#ff6600' : '#000000';
-
-            const entryText = `${rank.toString().padStart(2, ' ')}. ${name.padEnd(12, ' ')} ${displayScore.toString().padStart(6, ' ')}`;
-
-            this.add.text(width / 2, y, entryText, {
-                fontSize: '16px',
-                fontFamily: 'monospace',
-                color: color
-            }).setOrigin(0.5);
-        });
-    }
-
-    async submitScore() {
-        if (this.nameSubmitted) return;
-        if (this.playerName.trim().length === 0) {
-            this.playerName = 'Anonymous';
-        }
-
-        this.nameSubmitted = true;
-        this.submitBtn.setText('[ SUBMITTING... ]');
-        this.submitBtn.disableInteractive();
-
-        try {
-            // Submit negative score so higher scores rank first (API sorts ascending)
-            const response = await fetch('https://mann.cool/api/leaderboard', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    game: 'penisvagina',
-                    name: this.playerName.trim(),
-                    score: -this.finalScore, // Negate for proper ranking
-                    time: this.gameTime,
-                    character: this.character
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                this.submitBtn.setText('[ SUBMITTED! ]');
-                // Refresh leaderboard
-                this.fetchLeaderboard();
-            } else {
-                this.submitBtn.setText('[ ERROR - TRY AGAIN ]');
-                this.submitBtn.setInteractive();
-                this.nameSubmitted = false;
-            }
-        } catch (error) {
-            console.error('Failed to submit score:', error);
-            this.submitBtn.setText('[ ERROR - TRY AGAIN ]');
-            this.submitBtn.setInteractive();
-            this.nameSubmitted = false;
-        }
-    }
-
     createRestartButton(width, height) {
-        const restartBtn = this.add.text(width / 2, height * 0.92, '[ PLAY AGAIN ]', {
+        const restartBtn = this.add.text(width / 2, height * 0.5, '[ PLAY AGAIN ]', {
             fontSize: '24px',
             fontFamily: 'monospace',
             color: '#000000',
@@ -4592,7 +4391,7 @@ class GameOverScene extends Phaser.Scene {
         btnBorder.lineStyle(3, 0x000000);
         const btnWidth = restartBtn.width + 44;
         const btnHeight = restartBtn.height + 24;
-        btnBorder.strokeRect(width / 2 - btnWidth / 2, height * 0.92 - btnHeight / 2, btnWidth, btnHeight);
+        btnBorder.strokeRect(width / 2 - btnWidth / 2, height * 0.5 - btnHeight / 2, btnWidth, btnHeight);
 
         restartBtn.on('pointerover', () => restartBtn.setStyle({ backgroundColor: '#dddddd' }));
         restartBtn.on('pointerout', () => restartBtn.setStyle({ backgroundColor: '#ffffff' }));
@@ -4600,10 +4399,14 @@ class GameOverScene extends Phaser.Scene {
     }
 
     update() {
-        // Handle enter key for restart (when not typing name)
-        if (this.nameSubmitted && Phaser.Input.Keyboard.JustDown(this.enterKey)) {
+        const touch = window.touchControls ? window.touchControls.directions : {};
+        const actionPressed = Phaser.Input.Keyboard.JustDown(this.enterKey) ||
+                              Phaser.Input.Keyboard.JustDown(this.spaceBar) ||
+                              (touch.action && !this.touchActionPressed);
+        if (actionPressed) {
             this.scene.start('ModeSelectScene');
         }
+        this.touchActionPressed = touch.action;
     }
 }
 
