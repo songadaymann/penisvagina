@@ -1450,8 +1450,9 @@ class MainScene extends Phaser.Scene {
         this.scale.on('resize', this.resize, this);
 
         // Set up camera to follow the player (horizontal fully, vertical with slight lerp for jumps)
+        // Positive Y offset shifts camera down so ground stays near screen bottom
         this.cameras.main.startFollow(this.player, true, 1, 0.1);
-        this.cameras.main.setFollowOffset(-width * 0.3, 0);
+        this.cameras.main.setFollowOffset(-width * 0.3, height * 0.15);
 
         // Track camera position for ground line
         this.cameraX = 0;
@@ -3935,6 +3936,9 @@ class MainScene extends Phaser.Scene {
 
         this.updateCharacterScale();
         if (this.remotePlayer) this.updateRemoteCharacterScale();
+
+        // Update camera follow offset so ground stays near screen bottom
+        this.cameras.main.setFollowOffset(-width * 0.3, height * 0.15);
     }
 
     updateCharacterScale() {
