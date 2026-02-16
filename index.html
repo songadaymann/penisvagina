@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="x-ogp-key" content="YOUR_GAME_UUID_HERE" />
     <title>Penis vs Vagina</title>
     <style>
         * {
@@ -210,7 +211,9 @@
     <div class="touch-controls" id="touch-controls">
         <div class="control-group left">
             <div class="touch-btn arrow-left" data-control="left"></div>
+            <!-- DUCKING DISABLED
             <div class="touch-btn arrow-down" data-control="down"></div>
+            -->
             <div class="touch-btn arrow-right" data-control="right"></div>
         </div>
         <div class="control-group right">
@@ -220,7 +223,30 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://sdk.play.fun"></script>
     <script src="js/game.js"></script>
+
+    <script>
+        // Play.fun SDK initialization
+        var playfunSDK = null;
+        (async function initPlayFun() {
+            if (typeof OpenGameSDK === 'undefined') {
+                console.warn('Play.fun SDK not loaded');
+                return;
+            }
+            try {
+                playfunSDK = new OpenGameSDK({ ui: { usePointsWidget: true } });
+                await playfunSDK.init();
+                console.log('Play.fun SDK initialized');
+            } catch (e) {
+                console.warn('Play.fun SDK failed:', e);
+                playfunSDK = null;
+            }
+        })();
+        window.addEventListener('beforeunload', function() {
+            if (playfunSDK) playfunSDK.savePoints();
+        });
+    </script>
 
     <script>
         // Mobile Touch Controls Handler

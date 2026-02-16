@@ -239,15 +239,15 @@ class ModeSelectScene extends Phaser.Scene {
             this.scene.start('SelectScene');
         }});
 
-        // 2 Player button
-        const twoPlayerBtn = this.createButton(width / 2, height * 0.65, '2 PLAYER', () => {
-            isMultiplayer = true;
-            this.scene.start('LobbyChoiceScene');
-        });
-        this.menuOptions.push({ btn: twoPlayerBtn, callback: () => {
-            isMultiplayer = true;
-            this.scene.start('LobbyChoiceScene');
-        }});
+        // 2 Player disabled (multiplayer not compatible with distance scoring / Play.fun)
+        // const twoPlayerBtn = this.createButton(width / 2, height * 0.65, '2 PLAYER', () => {
+        //     isMultiplayer = true;
+        //     this.scene.start('LobbyChoiceScene');
+        // });
+        // this.menuOptions.push({ btn: twoPlayerBtn, callback: () => {
+        //     isMultiplayer = true;
+        //     this.scene.start('LobbyChoiceScene');
+        // }});
 
         // Keyboard controls
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -1449,8 +1449,8 @@ class MainScene extends Phaser.Scene {
         // Handle window resize
         this.scale.on('resize', this.resize, this);
 
-        // Set up camera to follow the player horizontally only (not vertically since terrain is flat)
-        this.cameras.main.startFollow(this.player, true, 1, 0);
+        // Set up camera to follow the player (horizontal fully, vertical with slight lerp for jumps)
+        this.cameras.main.startFollow(this.player, true, 1, 0.1);
         this.cameras.main.setFollowOffset(-width * 0.3, 0);
 
         // Track camera position for ground line
@@ -1549,7 +1549,8 @@ class MainScene extends Phaser.Scene {
             if (hat.hatId) delete this.hatMap[hat.hatId];
 
             if (!this.isMultiplayer) {
-                this.score++;
+                this.killScore += 10;
+                this.score = this.killScore + this.distanceScore;
                 this.updateScoreDisplay();
             }
         });
@@ -1564,7 +1565,8 @@ class MainScene extends Phaser.Scene {
                 hat.destroy();
                 if (hat.hatId) delete this.hatMap[hat.hatId];
                 if (!this.isMultiplayer) {
-                    this.score++;
+                    this.killScore += 10;
+                    this.score = this.killScore + this.distanceScore;
                     this.updateScoreDisplay();
                 }
             } else if (!this.isInvincible) {
@@ -1616,6 +1618,10 @@ class MainScene extends Phaser.Scene {
 
         // Score system
         this.score = 0;
+        this.killScore = 0;
+        this.distanceScore = 0;
+        this.startX = 200;
+        this.lastDistanceX = 200;
         this.createScoreDisplay();
 
         // Timer for compete mode
@@ -2555,7 +2561,8 @@ class MainScene extends Phaser.Scene {
         this.cameras.main.shake(50, 0.005);
 
         // Add score
-        this.score++;
+        this.killScore += 10;
+        this.score = this.killScore + this.distanceScore;
         this.updateScoreDisplay();
     }
 
@@ -2596,7 +2603,8 @@ class MainScene extends Phaser.Scene {
         });
 
         // Bonus score for killing boss
-        this.score += 50;
+        this.killScore += 50;
+        this.score = this.killScore + this.distanceScore;
         this.updateScoreDisplay();
 
         // Show "BOSS DEFEATED" text
@@ -3061,6 +3069,8 @@ class MainScene extends Phaser.Scene {
         // Transition to GameOverScene with score data
         this.scene.start('GameOverScene', {
             score: this.score,
+            killScore: this.killScore,
+            distanceScore: this.distanceScore,
             time: timeString,
             character: this.selectedCharacter
         });
@@ -3928,25 +3938,29 @@ class MainScene extends Phaser.Scene {
     }
 
     updateCharacterScale() {
-        const { height } = this.scale;
+        const { width, height } = this.scale;
 
-        const referenceHeight = 1080;
+        // Use same formula as hats for consistency: min(width, height) / 1080
+        const screenScale = Math.min(width, height) / 1080;
         const baseScale = 0.35;
-        const scale = (height / referenceHeight) * baseScale;
+        const scale = screenScale * baseScale;
 
-        const clampedScale = Math.max(0.15, Math.min(0.45, scale));
+        // Lower minimum for mobile (was 0.15, now 0.08)
+        const clampedScale = Math.max(0.08, Math.min(0.45, scale));
         this.player.setScale(clampedScale);
     }
 
     updateRemoteCharacterScale() {
         if (!this.remotePlayer) return;
 
-        const { height } = this.scale;
-        const referenceHeight = 1080;
-        const baseScale = 0.35;
-        const scale = (height / referenceHeight) * baseScale;
+        const { width, height } = this.scale;
 
-        const clampedScale = Math.max(0.15, Math.min(0.45, scale));
+        // Use same formula as hats for consistency
+        const screenScale = Math.min(width, height) / 1080;
+        const baseScale = 0.35;
+        const scale = screenScale * baseScale;
+
+        const clampedScale = Math.max(0.08, Math.min(0.45, scale));
         this.remotePlayer.setScale(clampedScale);
     }
 
@@ -3961,6 +3975,17 @@ class MainScene extends Phaser.Scene {
         // Update difficulty manager
         if (this.difficulty) {
             this.difficulty.update(delta);
+        }
+
+        // Update distance score (1 point per 100px of forward progress)
+        if (this.player.x > this.lastDistanceX) {
+            this.lastDistanceX = this.player.x;
+            const newDistanceScore = Math.floor((this.player.x - this.startX) / 100);
+            if (newDistanceScore !== this.distanceScore) {
+                this.distanceScore = newDistanceScore;
+                this.score = this.killScore + this.distanceScore;
+                this.updateScoreDisplay();
+            }
         }
 
         // Update bosses
@@ -4241,6 +4266,8 @@ class GameOverScene extends Phaser.Scene {
 
     init(data) {
         this.finalScore = data.score || 0;
+        this.killScore = data.killScore || 0;
+        this.distanceScore = data.distanceScore || 0;
         this.gameTime = data.time || '0:00';
         this.character = data.character || 'penis';
     }
@@ -4272,13 +4299,27 @@ class GameOverScene extends Phaser.Scene {
         });
         scoreText.setOrigin(0.5);
 
+        // Score breakdown
+        const breakdownText = this.add.text(width / 2, height * 0.24, `KILLS: ${this.killScore}  DISTANCE: ${this.distanceScore}`, {
+            fontSize: '16px',
+            fontFamily: 'monospace',
+            color: '#666666'
+        });
+        breakdownText.setOrigin(0.5);
+
         // Time survived
-        const timeText = this.add.text(width / 2, height * 0.24, `TIME: ${this.gameTime}`, {
+        const timeText = this.add.text(width / 2, height * 0.29, `TIME: ${this.gameTime}`, {
             fontSize: '20px',
             fontFamily: 'monospace',
             color: '#666666'
         });
         timeText.setOrigin(0.5);
+
+        // Send final score to Play.fun
+        if (window.playfunSDK) {
+            window.playfunSDK.addPoints(this.finalScore);
+            window.playfunSDK.savePoints();
+        }
 
         // Name input section
         this.createNameInput(width, height);
